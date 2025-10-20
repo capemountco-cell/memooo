@@ -165,17 +165,19 @@ const Recorder = () => {
     if (!sessionId || isProcessing) return;
 
     setIsProcessing(true);
-    toast('Processing recording...', { duration: 1000 });
 
     const mr = mediaRecorderRef.current;
     if (!mr) {
-      toast.error('No recording found.', { duration: 1000 });
+      toast.error('No recording found.');
       setIsProcessing(false);
       return;
     }
 
     return new Promise<void>((resolve) => {
       mr.onstop = async () => {
+        // Show a short non-persistent toast
+        toast.message('Processing recording…');
+        
         try {
           const audioBlob = new Blob(chunksRef.current, { 
             type: mr.mimeType || 'audio/webm;codecs=opus' 
@@ -233,11 +235,11 @@ const Recorder = () => {
             .update({ status: 'ready' })
             .eq('id', sessionId);
 
-          toast.success('Recording processed!', { duration: 1000 });
+          toast.success('Done!');
           navigate(`/summary/${sessionId}`);
         } catch (error) {
           console.error('Error processing recording:', error);
-          toast.error('Failed to process recording', { duration: 1000 });
+          toast.error('Upload failed');
           setIsProcessing(false);
         } finally {
           cleanup();
