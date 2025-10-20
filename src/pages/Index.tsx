@@ -4,6 +4,7 @@ import { RecordButton } from '@/components/RecordButton';
 import { SessionCard } from '@/components/SessionCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import fflogo from '@/assets/fflogo.svg';
 
 interface Session {
   id: string;
@@ -80,9 +81,7 @@ const Index = () => {
       style={{ minHeight: '100svh' }}
     >
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl">
-        <h1 className="text-4xl font-bold text-primary-foreground mb-12 tracking-tight">
-          FIREFLY
-        </h1>
+        <img src={fflogo} alt="Firefly" className="h-16 mb-12 brightness-0 invert" />
         <div onClick={handleStartRecording} className="cursor-pointer">
           <RecordButton isRecording={hasActiveRecording} onClick={handleStartRecording} />
         </div>

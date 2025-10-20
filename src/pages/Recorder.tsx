@@ -1,34 +1,77 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Timer } from '@/components/Timer';
 import { Waveform } from '@/components/Waveform';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudioFile, convertBlobToBase64 } from '@/utils/audioUpload';
 import { toast } from 'sonner';
 
+type RecState = 'idle' | 'initializing' | 'recording' | 'paused' | 'error';
+
 const Recorder = () => {
   const navigate = useNavigate();
-  const {
-    isRecording,
-    isPaused,
-    seconds,
-    analyser,
-    startRecording,
-    pauseRecording,
-    resumeRecording,
-    stopRecording,
-    cancelRecording,
-  } = useAudioRecorder();
-
+  const [recState, setRecState] = useState<RecState>('idle');
+  const [seconds, setSeconds] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
+  // Choose mime with fallback
+  const pickMime = () => {
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/mp4',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+    ];
+    return candidates.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  };
+
+  const bgClass = useMemo(() => {
+    if (recState === 'recording') return 'bg-primary';
+    if (recState === 'paused') return 'bg-[hsl(var(--paused))]';
+    return 'bg-foreground';
+  }, [recState]);
+
+  // Timer
   useEffect(() => {
-    // Start recording immediately on mount
+    if (recState !== 'recording') return;
+    const id = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [recState]);
+
+  // Cleanup helper
+  const cleanup = () => {
+    try {
+      mediaRecorderRef.current?.stream.getTracks().forEach((t) => t.stop());
+    } catch {}
+    mediaRecorderRef.current = null;
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+  };
+
+  // Start recording on mount
+  useEffect(() => {
     const initRecording = async () => {
+      if (recState !== 'idle') return;
+      setRecState('initializing');
+      setSeconds(0);
+
       try {
         // Create session
         const { data: session, error } = await supabase
@@ -43,26 +86,79 @@ const Recorder = () => {
         if (error) throw error;
         setSessionId(session.id);
 
-        // Start audio recording
-        await startRecording();
-      } catch (error) {
-        console.error('Failed to start recording:', error);
-        toast.error('Failed to start recording');
-        navigate('/');
+        // Get media stream
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            sampleRate: 24000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+        });
+        streamRef.current = stream;
+
+        // Set up audio context for waveform
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
+        analyserRef.current.fftSize = 2048;
+
+        // Set up media recorder
+        const mimeType = pickMime();
+        const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        mediaRecorderRef.current = mr;
+
+        chunksRef.current = [];
+        mr.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunksRef.current.push(e.data);
+          }
+        };
+        
+        mr.onstart = () => setRecState('recording');
+        mr.onpause = () => setRecState('paused');
+        mr.onresume = () => setRecState('recording');
+        mr.onerror = (e) => {
+          console.error('MediaRecorder error', e);
+          toast.error('Recording error.');
+          cleanup();
+          setRecState('error');
+        };
+
+        mr.start(250);
+      } catch (err) {
+        console.error('Failed to start recording', err);
+        toast.error('Failed to start recording. Check mic permissions.');
+        cleanup();
+        setRecState('error');
+        // Return to home after brief delay
+        setTimeout(() => navigate('/'), 1200);
       }
     };
 
     initRecording();
   }, []);
 
+  const pauseOrResume = () => {
+    const mr = mediaRecorderRef.current;
+    if (!mr) return;
+    if (mr.state === 'recording') mr.pause();
+    else if (mr.state === 'paused') mr.resume();
+  };
+
   const handleScreenTap = () => {
     if (isProcessing) return;
-    
-    if (isPaused) {
-      resumeRecording();
-    } else if (isRecording) {
-      pauseRecording();
+    if (recState === 'recording' || recState === 'paused') pauseOrResume();
+  };
+
+  const handleCancel = () => {
+    mediaRecorderRef.current?.stop();
+    cleanup();
+    if (sessionId) {
+      supabase.from('sessions').delete().eq('id', sessionId);
     }
+    navigate('/');
   };
 
   const handleDone = async () => {
@@ -71,96 +167,102 @@ const Recorder = () => {
     setIsProcessing(true);
     toast.loading('Processing recording...');
 
-    try {
-      // Stop recording
-      const audioBlob = await stopRecording();
-
-      // Update session
-      await supabase
-        .from('sessions')
-        .update({
-          ended_at: new Date().toISOString(),
-          duration_seconds: seconds,
-          status: 'processing',
-        })
-        .eq('id', sessionId);
-
-      // Upload audio
-      const audioUrl = await uploadAudioFile(audioBlob, sessionId);
-      await supabase
-        .from('sessions')
-        .update({ audio_url: audioUrl })
-        .eq('id', sessionId);
-
-      // Transcribe with Deepgram
-      const base64Audio = await convertBlobToBase64(audioBlob);
-      const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke(
-        'transcribe-deepgram',
-        {
-          body: {
-            base64Audio,
-            mimeType: 'audio/webm;codecs=opus',
-            sessionId,
-          },
-        }
-      );
-
-      if (transcriptError || !transcriptData?.success) {
-        throw new Error('Transcription failed');
-      }
-
-      const transcript = transcriptData.text;
-
-      // Analyze insights
-      await supabase.functions.invoke('analyze-insights', {
-        body: { sessionId, transcript },
-      });
-
-      // Extract tasks
-      await supabase.functions.invoke('extract-tasks', {
-        body: { session_id: sessionId, overwrite: true },
-      });
-
-      // Mark as ready
-      await supabase
-        .from('sessions')
-        .update({ status: 'ready' })
-        .eq('id', sessionId);
-
-      toast.success('Recording processed!');
-      navigate(`/summary/${sessionId}`);
-    } catch (error) {
-      console.error('Error processing recording:', error);
-      toast.error('Failed to process recording');
+    const mr = mediaRecorderRef.current;
+    if (!mr) {
+      toast.error('No recording found.');
       setIsProcessing(false);
+      return;
     }
-  };
 
-  const handleCancel = () => {
-    cancelRecording();
-    if (sessionId) {
-      supabase.from('sessions').delete().eq('id', sessionId);
-    }
-    navigate('/');
-  };
+    return new Promise<void>((resolve) => {
+      mr.onstop = async () => {
+        try {
+          const audioBlob = new Blob(chunksRef.current, { 
+            type: mr.mimeType || 'audio/webm;codecs=opus' 
+          });
 
-  const bgColor = isPaused
-    ? 'bg-[hsl(var(--paused))]'
-    : 'bg-primary';
+          // Update session
+          await supabase
+            .from('sessions')
+            .update({
+              ended_at: new Date().toISOString(),
+              duration_seconds: seconds,
+              status: 'processing',
+            })
+            .eq('id', sessionId);
+
+          // Upload audio
+          const audioUrl = await uploadAudioFile(audioBlob, sessionId);
+          await supabase
+            .from('sessions')
+            .update({ audio_url: audioUrl })
+            .eq('id', sessionId);
+
+          // Transcribe with Deepgram
+          const base64Audio = await convertBlobToBase64(audioBlob);
+          const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke(
+            'transcribe-deepgram',
+            {
+              body: {
+                base64Audio,
+                mimeType: mr.mimeType || 'audio/webm;codecs=opus',
+                sessionId,
+              },
+            }
+          );
+
+          if (transcriptError || !transcriptData?.success) {
+            throw new Error('Transcription failed');
+          }
+
+          const transcript = transcriptData.text;
+
+          // Analyze insights
+          await supabase.functions.invoke('analyze-insights', {
+            body: { sessionId, transcript },
+          });
+
+          // Extract tasks
+          await supabase.functions.invoke('extract-tasks', {
+            body: { session_id: sessionId, overwrite: true },
+          });
+
+          // Mark as ready
+          await supabase
+            .from('sessions')
+            .update({ status: 'ready' })
+            .eq('id', sessionId);
+
+          toast.success('Recording processed!');
+          navigate(`/summary/${sessionId}`);
+        } catch (error) {
+          console.error('Error processing recording:', error);
+          toast.error('Failed to process recording');
+          setIsProcessing(false);
+        } finally {
+          cleanup();
+          resolve();
+        }
+      };
+
+      mr.stop();
+      setRecState('idle');
+    });
+  };
 
   return (
     <div
       onClick={handleScreenTap}
-      className={`min-h-screen ${bgColor} transition-colors duration-500 flex flex-col items-center justify-center p-6 text-primary-foreground relative`}
+      className={`min-h-screen ${bgClass} transition-colors duration-500 flex flex-col items-center justify-center p-6 text-primary-foreground relative`}
       style={{ minHeight: '100svh' }}
     >
       <div className="flex-1 flex flex-col items-center justify-center gap-12 max-w-4xl w-full">
         <Timer seconds={seconds} />
-        <Waveform analyser={analyser} />
+        <Waveform analyser={analyserRef.current} />
         <p className="text-lg opacity-80">
-          {isPaused ? 'Recording Paused' : 'Recording from Microphone'}
+          {recState === 'paused' ? 'Recording Paused' : 'Recording from Microphone'}
         </p>
-        {!isPaused && (
+        {recState === 'recording' && (
           <p className="text-sm opacity-60">Tap anywhere to pause</p>
         )}
       </div>
