@@ -121,7 +121,7 @@ const Recorder = () => {
         mr.onresume = () => setRecState('recording');
         mr.onerror = (e) => {
           console.error('MediaRecorder error', e);
-          toast.error('Recording error.');
+          toast.error('Recording error.', { duration: 1000 });
           cleanup();
           setRecState('error');
         };
@@ -129,7 +129,7 @@ const Recorder = () => {
         mr.start(250);
       } catch (err) {
         console.error('Failed to start recording', err);
-        toast.error('Failed to start recording. Check mic permissions.');
+        toast.error('Failed to start recording. Check mic permissions.', { duration: 1000 });
         cleanup();
         setRecState('error');
         // Return to home after brief delay
@@ -165,11 +165,11 @@ const Recorder = () => {
     if (!sessionId || isProcessing) return;
 
     setIsProcessing(true);
-    toast.loading('Processing recording...');
+    toast('Processing recording...', { duration: 1000 });
 
     const mr = mediaRecorderRef.current;
     if (!mr) {
-      toast.error('No recording found.');
+      toast.error('No recording found.', { duration: 1000 });
       setIsProcessing(false);
       return;
     }
@@ -233,11 +233,11 @@ const Recorder = () => {
             .update({ status: 'ready' })
             .eq('id', sessionId);
 
-          toast.success('Recording processed!');
+          toast.success('Recording processed!', { duration: 1000 });
           navigate(`/summary/${sessionId}`);
         } catch (error) {
           console.error('Error processing recording:', error);
-          toast.error('Failed to process recording');
+          toast.error('Failed to process recording', { duration: 1000 });
           setIsProcessing(false);
         } finally {
           cleanup();

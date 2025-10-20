@@ -80,10 +80,10 @@ const Index = () => {
       if (error) throw error;
 
       setSessions(sessions.filter(s => s.id !== id));
-      toast.success('Recording deleted');
+      toast.success('Recording deleted', { duration: 1000 });
     } catch (error) {
       console.error('Error deleting session:', error);
-      toast.error('Failed to delete recording');
+      toast.error('Failed to delete recording', { duration: 1000 });
     }
   };
 
