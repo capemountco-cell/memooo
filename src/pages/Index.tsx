@@ -21,6 +21,26 @@ const Index = () => {
 
   useEffect(() => {
     loadRecentSessions();
+    
+    // Clean up any stuck recording sessions on mount
+    const cleanupStuckSessions = async () => {
+      const { data } = await supabase
+        .from('sessions')
+        .select('id, status')
+        .eq('status', 'recording');
+      
+      if (data && data.length > 0) {
+        // Delete or mark as failed
+        await supabase
+          .from('sessions')
+          .delete()
+          .eq('status', 'recording');
+        
+        setHasActiveRecording(false);
+      }
+    };
+    
+    cleanupStuckSessions();
   }, []);
 
   const loadRecentSessions = async () => {
