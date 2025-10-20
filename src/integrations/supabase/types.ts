@@ -14,7 +14,215 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      participants: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          started_at: string
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      summaries: {
+        Row: {
+          action_items: Json | null
+          created_at: string
+          dates: Json | null
+          decisions: string[] | null
+          detected_templates: string[] | null
+          followups: string[] | null
+          id: string
+          key_topics: string[] | null
+          overview: string | null
+          participants: string[] | null
+          questions: string[] | null
+          risks: string[] | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_items?: Json | null
+          created_at?: string
+          dates?: Json | null
+          decisions?: string[] | null
+          detected_templates?: string[] | null
+          followups?: string[] | null
+          id?: string
+          key_topics?: string[] | null
+          overview?: string | null
+          participants?: string[] | null
+          questions?: string[] | null
+          risks?: string[] | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_items?: Json | null
+          created_at?: string
+          dates?: Json | null
+          decisions?: string[] | null
+          detected_templates?: string[] | null
+          followups?: string[] | null
+          id?: string
+          key_topics?: string[] | null
+          overview?: string | null
+          participants?: string[] | null
+          questions?: string[] | null
+          risks?: string[] | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summaries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          created_at: string
+          due_at: string | null
+          id: string
+          owner: string | null
+          priority: string
+          session_id: string
+          source: string
+          status: string
+          title: string
+          transcript_ref_seconds: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          owner?: string | null
+          priority?: string
+          session_id: string
+          source?: string
+          status?: string
+          title: string
+          transcript_ref_seconds?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          owner?: string | null
+          priority?: string
+          session_id?: string
+          source?: string
+          status?: string
+          title?: string
+          transcript_ref_seconds?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transcripts: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string
+          speaker: string | null
+          text: string
+          timestamp_seconds: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id: string
+          speaker?: string | null
+          text: string
+          timestamp_seconds?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string
+          speaker?: string | null
+          text?: string
+          timestamp_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcripts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
