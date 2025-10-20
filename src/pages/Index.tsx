@@ -101,7 +101,7 @@ const Index = () => {
       style={{ minHeight: '100svh' }}
     >
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl">
-        <img src={fflogo} alt="Firefly" className="h-16 mb-12 brightness-0 invert" />
+        <img src={fflogo} alt="Firefly" className="h-20 mb-12 brightness-0 invert" />
         <div onClick={handleStartRecording} className="cursor-pointer">
           <RecordButton isRecording={hasActiveRecording} onClick={handleStartRecording} />
         </div>

@@ -9,6 +9,7 @@ import { TemplateSelect } from '@/components/TemplateSelect';
 import { TaskItem } from '@/components/TaskItem';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import fflogo from '@/assets/fflogo.svg';
 
 interface Session {
   id: string;
@@ -291,7 +292,7 @@ ${transcript}
           >
             <ChevronLeft size={24} />
           </Button>
-          <h1 className="text-xl font-semibold">{session.title}</h1>
+          <img src={fflogo} alt="Firefly" className="h-7 opacity-90" />
         </div>
         <Button
           variant="ghost"

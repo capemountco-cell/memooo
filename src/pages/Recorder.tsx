@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Timer } from '@/components/Timer';
 import { Waveform } from '@/components/Waveform';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudioFile, convertBlobToBase64 } from '@/utils/audioUpload';
 import { toast } from 'sonner';
@@ -149,6 +148,14 @@ const Recorder = () => {
 
   const handleScreenTap = () => {
     if (isProcessing) return;
+    
+    // Start recording if idle
+    if (recState === 'idle') {
+      // Will be handled by the useEffect on mount
+      return;
+    }
+    
+    // Toggle pause/resume when recording or paused
     if (recState === 'recording' || recState === 'paused') pauseOrResume();
   };
 
@@ -261,31 +268,49 @@ const Recorder = () => {
       <div className="flex-1 flex flex-col items-center justify-center gap-12 max-w-4xl w-full">
         <Timer seconds={seconds} />
         <Waveform analyser={analyserRef.current} />
-        <p className="text-lg opacity-80">
-          {recState === 'paused' ? 'Recording Paused' : 'Recording from Microphone'}
-        </p>
-        {recState === 'recording' && (
-          <p className="text-sm opacity-60">Tap anywhere to pause</p>
-        )}
+        
+        <div className="text-center space-y-1">
+          {recState === 'recording' && (
+            <>
+              <p className="text-base opacity-90">Recording from Microphone</p>
+              <p className="text-sm opacity-75">Tap anywhere to pause</p>
+            </>
+          )}
+          {recState === 'paused' && (
+            <>
+              <p className="text-base opacity-90">Recording Paused</p>
+              <p className="text-sm opacity-75">Tap anywhere to resume</p>
+            </>
+          )}
+          {recState === 'idle' && (
+            <p className="text-sm opacity-75">Tap anywhere to start</p>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center justify-center gap-4 pb-8 pt-4 w-full">
-        <Button
-          onClick={handleDone}
-          disabled={isProcessing || seconds < 1}
-          className="min-w-[160px] h-14 rounded-full text-lg bg-primary-foreground/10 backdrop-blur-xl border-2 border-primary-foreground/20 hover:bg-primary-foreground/15"
-        >
-          Done
-        </Button>
-        <Button
-          onClick={handleCancel}
-          disabled={isProcessing}
-          variant="ghost"
-          size="icon"
-          className="h-14 w-14 rounded-full bg-primary-foreground/10 backdrop-blur-xl border-2 border-primary-foreground/20 hover:bg-primary-foreground/15"
-        >
-          <X size={24} />
-        </Button>
+      <div className="w-full max-w-md px-4 pb-8 pt-4 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDone();
+            }}
+            disabled={isProcessing || seconds < 1}
+            className="h-12 rounded-2xl text-base font-medium bg-primary-foreground text-foreground hover:bg-primary-foreground/90"
+          >
+            Done
+          </Button>
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCancel();
+            }}
+            disabled={isProcessing}
+            className="h-12 rounded-2xl text-base bg-primary-foreground/10 backdrop-blur-xl border-2 border-primary-foreground/20 hover:bg-primary-foreground/15"
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     </div>
   );
