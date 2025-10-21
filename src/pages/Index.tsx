@@ -57,8 +57,18 @@ const Index = () => {
       if (error) throw error;
 
       if (data) {
-        setSessions(data);
-        const active = data.some(s => s.status === 'recording');
+        // Filter out sessions with 0 or null duration
+        const validSessions = data.filter(s => s.duration_seconds && s.duration_seconds > 0);
+        
+        // Delete sessions with 0 or null duration
+        const invalidSessions = data.filter(s => !s.duration_seconds || s.duration_seconds === 0);
+        if (invalidSessions.length > 0) {
+          const invalidIds = invalidSessions.map(s => s.id);
+          await supabase.from('sessions').delete().in('id', invalidIds);
+        }
+        
+        setSessions(validSessions);
+        const active = validSessions.some(s => s.status === 'recording');
         setHasActiveRecording(active);
       }
     } catch (error) {

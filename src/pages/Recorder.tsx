@@ -157,14 +157,14 @@ const Recorder = () => {
     if (recState === 'recording' || recState === 'paused') pauseOrResume();
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     setRecState('processing'); // Immediate black to prevent red flash
     try {
       mediaRecorderRef.current?.stop();
     } catch {}
     cleanup();
     if (sessionId) {
-      supabase.from('sessions').delete().eq('id', sessionId);
+      await supabase.from('sessions').delete().eq('id', sessionId);
     }
     // Brief fade before returning to idle
     setTimeout(() => {
