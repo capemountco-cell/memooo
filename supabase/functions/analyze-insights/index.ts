@@ -115,7 +115,48 @@ Transcript: ${transcript.substring(0, 1500)}`;
       .update({ title: generatedTitle })
       .eq('id', sessionId);
 
-    // Step 3: Extract structured insights
+    // Step 3: Format transcript for readability
+    console.log('Formatting transcript...');
+    const formatPrompt = `Format this meeting transcript into readable, structured paragraphs. Break it into natural sections with proper paragraph breaks. Make it look like professional typed notes. Keep all the content but organize it clearly. Return ONLY the formatted text, no extra commentary.
+
+Transcript: ${transcript}`;
+
+    let formattedTranscript = transcript;
+    
+    try {
+      const formatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: formatPrompt }],
+          temperature: 0.3,
+        }),
+      });
+
+      if (formatResponse.ok) {
+        const formatResult = await formatResponse.json();
+        const formatted = formatResult.choices?.[0]?.message?.content?.trim();
+        if (formatted && formatted.length > 0) {
+          formattedTranscript = formatted;
+        }
+      }
+    } catch (error) {
+      console.error('Transcript formatting failed, using original:', error);
+    }
+
+    // Update transcript with formatted version
+    await supabase
+      .from('transcripts')
+      .update({ text: formattedTranscript })
+      .eq('session_id', sessionId);
+
+    console.log('Transcript formatted and updated');
+
+    // Step 4: Extract structured insights
     const insightsPrompt = `Analyze this ${detectedTemplates.join('/')} meeting transcript and extract structured insights.
 
 Return ONLY valid JSON with this structure:
@@ -130,7 +171,7 @@ Return ONLY valid JSON with this structure:
   "participants": ["name1", "name2"]
 }
 
-Transcript: ${transcript}`;
+Transcript: ${formattedTranscript}`;
 
     console.log('Extracting insights...');
 
@@ -161,23 +202,50 @@ Transcript: ${transcript}`;
       insights = { overview: 'Analysis failed', key_topics: [], decisions: [], questions: [], risks: [], followups: [], dates: [], participants: [] };
     }
 
-    // Save to summaries table
-    const { error: upsertError } = await supabase
+    // Save to summaries table - first check if exists
+    const { data: existingSummary } = await supabase
       .from('summaries')
-      .upsert({
-        session_id: sessionId,
-        overview: insights.overview || null,
-        key_topics: insights.key_topics || [],
-        decisions: insights.decisions || [],
-        questions: insights.questions || [],
-        risks: insights.risks || [],
-        followups: insights.followups || [],
-        dates: insights.dates || [],
-        participants: insights.participants || [],
-        detected_templates: detectedTemplates,
-      }, {
-        onConflict: 'session_id'
-      });
+      .select('id')
+      .eq('session_id', sessionId)
+      .maybeSingle();
+
+    let upsertError;
+    
+    if (existingSummary) {
+      // Update existing
+      const { error } = await supabase
+        .from('summaries')
+        .update({
+          overview: insights.overview || null,
+          key_topics: insights.key_topics || [],
+          decisions: insights.decisions || [],
+          questions: insights.questions || [],
+          risks: insights.risks || [],
+          followups: insights.followups || [],
+          dates: insights.dates || [],
+          participants: insights.participants || [],
+          detected_templates: detectedTemplates,
+        })
+        .eq('session_id', sessionId);
+      upsertError = error;
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from('summaries')
+        .insert({
+          session_id: sessionId,
+          overview: insights.overview || null,
+          key_topics: insights.key_topics || [],
+          decisions: insights.decisions || [],
+          questions: insights.questions || [],
+          risks: insights.risks || [],
+          followups: insights.followups || [],
+          dates: insights.dates || [],
+          participants: insights.participants || [],
+          detected_templates: detectedTemplates,
+        });
+      upsertError = error;
+    }
 
     if (upsertError) {
       console.error('Database upsert error:', upsertError);

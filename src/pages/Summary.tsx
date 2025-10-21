@@ -505,9 +505,11 @@ ${transcript}
                     <Skeleton className="h-4 w-4/5" />
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {transcript}
-                  </p>
+                  <div className="prose prose-sm max-w-none text-muted-foreground">
+                    <div className="whitespace-pre-wrap leading-relaxed">
+                      {transcript}
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
