@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { TemplateSelect } from '@/components/TemplateSelect';
 import { TaskItem } from '@/components/TaskItem';
+import { Skeleton } from '@/components/ui/skeleton';
+import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import fflogo from '@/assets/fflogo.svg';
@@ -50,6 +52,9 @@ const Summary = () => {
   const [templates, setTemplates] = useState<string[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingLabel, setLoadingLabel] = useState('Loading session...');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -60,6 +65,10 @@ const Summary = () => {
     if (!id) return;
 
     try {
+      setIsLoading(true);
+      setLoadingProgress(10);
+      setLoadingLabel('Loading session...');
+
       // Load session
       const { data: sessionData } = await supabase
         .from('sessions')
@@ -70,8 +79,10 @@ const Summary = () => {
       if (sessionData) {
         setSession(sessionData);
       }
+      setLoadingProgress(30);
 
       // Load summary
+      setLoadingLabel('Loading insights...');
       const { data: summaryData } = await supabase
         .from('summaries')
         .select('*')
@@ -82,8 +93,10 @@ const Summary = () => {
         setSummary(summaryData);
         setTemplates(summaryData.detected_templates || []);
       }
+      setLoadingProgress(60);
 
       // Load tasks
+      setLoadingLabel('Loading tasks...');
       const { data: tasksData } = await supabase
         .from('tasks')
         .select('*')
@@ -93,8 +106,10 @@ const Summary = () => {
       if (tasksData) {
         setTasks(tasksData);
       }
+      setLoadingProgress(85);
 
       // Load transcript
+      setLoadingLabel('Loading transcript...');
       const { data: transcriptData } = await supabase
         .from('transcripts')
         .select('text')
@@ -104,9 +119,14 @@ const Summary = () => {
       if (transcriptData) {
         setTranscript(transcriptData.map(t => t.text).join(' '));
       }
+      setLoadingProgress(100);
+      
+      // Small delay to show 100%
+      setTimeout(() => setIsLoading(false), 200);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load session data');
+      setIsLoading(false);
     }
   };
 
@@ -273,10 +293,16 @@ ${transcript}
     toast.success('Note copied to clipboard');
   };
 
-  if (!session) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div 
+        className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-500"
+        style={{ minHeight: '100svh' }}
+      >
+        <img src={fflogo} alt="Firefly" className="h-20 mb-12 brightness-0 invert" />
+        <div className="w-full max-w-2xl px-4">
+          <ProgressBar value={loadingProgress} label={loadingLabel} />
+        </div>
       </div>
     );
   }
@@ -318,7 +344,17 @@ ${transcript}
           </TabsList>
 
           <TabsContent value="insights" className="space-y-4 mt-4">
-            {summary?.overview && (
+            {!summary ? (
+              <Card>
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </CardContent>
+              </Card>
+            ) : summary?.overview ? (
               <Card>
                 <CardHeader>
                   <CardTitle>Overview</CardTitle>
@@ -327,7 +363,7 @@ ${transcript}
                   <p className="text-sm text-muted-foreground">{summary.overview}</p>
                 </CardContent>
               </Card>
-            )}
+            ) : null}
 
             {tasks.filter(t => t.status === 'open' && t.source === 'ai').length > 0 && (
               <Card>
@@ -460,13 +496,17 @@ ${transcript}
           <TabsContent value="transcript" className="mt-4">
             <Card>
               <CardContent className="pt-6">
-                {transcript ? (
+                {!transcript ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-4/5" />
+                  </div>
+                ) : (
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                     {transcript}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center">
-                    No transcript available
                   </p>
                 )}
               </CardContent>
