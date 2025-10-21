@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Timer } from '@/components/Timer';
 import { Waveform } from '@/components/Waveform';
@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudioFile, convertBlobToBase64 } from '@/utils/audioUpload';
 import { toast } from 'sonner';
-
-type RecState = 'idle' | 'initializing' | 'recording' | 'paused' | 'error';
+import { RecState, bgFor } from '@/lib/recState';
+import ProgressBar from '@/components/ProgressBar';
 
 const Recorder = () => {
   const navigate = useNavigate();
@@ -15,6 +15,8 @@ const Recorder = () => {
   const [seconds, setSeconds] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('Preparing…');
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -32,12 +34,6 @@ const Recorder = () => {
     ];
     return candidates.find((t) => MediaRecorder.isTypeSupported(t)) || '';
   };
-
-  const bgClass = useMemo(() => {
-    if (recState === 'recording') return 'bg-primary';
-    if (recState === 'paused') return 'bg-[hsl(var(--paused))]';
-    return 'bg-foreground';
-  }, [recState]);
 
   // Timer
   useEffect(() => {
@@ -160,36 +156,48 @@ const Recorder = () => {
   };
 
   const handleCancel = () => {
-    mediaRecorderRef.current?.stop();
+    setRecState('processing'); // Immediate black to prevent red flash
+    try {
+      mediaRecorderRef.current?.stop();
+    } catch {}
     cleanup();
     if (sessionId) {
       supabase.from('sessions').delete().eq('id', sessionId);
     }
-    navigate('/');
+    // Brief fade before returning to idle
+    setTimeout(() => {
+      setRecState('idle');
+      navigate('/');
+    }, 200);
   };
 
   const handleDone = async () => {
     if (!sessionId || isProcessing) return;
 
     setIsProcessing(true);
-
     const mr = mediaRecorderRef.current;
     if (!mr) {
-      toast.error('No recording found.');
+      toast.info('Nothing to save', { duration: 1000 });
       setIsProcessing(false);
       return;
     }
 
+    // Immediately go to black & progress mode
+    setRecState('processing');
+    setProgress(5);
+    setProgressLabel('Finalizing input…');
+
     return new Promise<void>((resolve) => {
       mr.onstop = async () => {
-        // Show a short non-persistent toast
-        toast.message('Processing recording…');
-        
         try {
           const audioBlob = new Blob(chunksRef.current, { 
             type: mr.mimeType || 'audio/webm;codecs=opus' 
           });
 
+          // 0–40% Upload with progress
+          setProgressLabel('Uploading audio…');
+          setProgress(10);
+          
           // Update session
           await supabase
             .from('sessions')
@@ -200,6 +208,8 @@ const Recorder = () => {
             })
             .eq('id', sessionId);
 
+          setProgress(20);
+
           // Upload audio
           const audioUrl = await uploadAudioFile(audioBlob, sessionId);
           await supabase
@@ -207,7 +217,12 @@ const Recorder = () => {
             .update({ audio_url: audioUrl })
             .eq('id', sessionId);
 
-          // Transcribe with Deepgram
+          setProgress(35);
+
+          // 40–85% Transcribe (Deepgram)
+          setProgressLabel('Transcribing (Deepgram)…');
+          setProgress(45);
+          
           const base64Audio = await convertBlobToBase64(audioBlob);
           const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke(
             'transcribe-deepgram',
@@ -220,21 +235,30 @@ const Recorder = () => {
             }
           );
 
+          setProgress(60);
+
           if (transcriptError || !transcriptData?.success) {
             throw new Error('Transcription failed');
           }
 
           const transcript = transcriptData.text;
+          setProgress(80);
 
-          // Analyze insights
+          // 85–100% Analyze & tasks
+          setProgressLabel('Analyzing & extracting tasks…');
+          setProgress(85);
+          
           await supabase.functions.invoke('analyze-insights', {
             body: { sessionId, transcript },
           });
 
-          // Extract tasks
+          setProgress(92);
+
           await supabase.functions.invoke('extract-tasks', {
             body: { session_id: sessionId, overwrite: true },
           });
+
+          setProgress(98);
 
           // Mark as ready
           await supabase
@@ -242,11 +266,14 @@ const Recorder = () => {
             .update({ status: 'ready' })
             .eq('id', sessionId);
 
-          toast.success('Done!');
+          setProgress(100);
+
+          // Navigate to summary
           navigate(`/summary/${sessionId}`);
         } catch (error) {
           console.error('Error processing recording:', error);
-          toast.error('Upload failed');
+          toast.error('Processing failed', { duration: 1000 });
+          setRecState('idle');
           setIsProcessing(false);
         } finally {
           cleanup();
@@ -255,35 +282,48 @@ const Recorder = () => {
       };
 
       mr.stop();
-      setRecState('idle');
     });
   };
 
   return (
     <div
       onClick={handleScreenTap}
-      className={`min-h-screen ${bgClass} transition-colors duration-500 flex flex-col items-center justify-center p-6 text-primary-foreground relative`}
+      className={`min-h-screen ${bgFor(recState)} transition-colors duration-500 flex flex-col items-center justify-center p-6 text-primary-foreground relative motion-reduce:transition-none`}
       style={{ minHeight: '100svh' }}
     >
       <div className="flex-1 flex flex-col items-center justify-center gap-12 max-w-4xl w-full">
         <Timer seconds={seconds} />
-        <Waveform analyser={analyserRef.current} />
         
-        <div className="text-center space-y-1">
+        {(recState === 'recording' || recState === 'paused') && (
+          <div className="w-full transition-opacity duration-300">
+            <Waveform analyser={analyserRef.current} />
+          </div>
+        )}
+        
+        {recState === 'processing' && (
+          <div className="w-full px-4 transition-opacity duration-300">
+            <ProgressBar value={progress} label={progressLabel} />
+          </div>
+        )}
+        
+        <div className="text-center space-y-1 leading-tight">
           {recState === 'recording' && (
             <>
-              <p className="text-base opacity-90">Recording from Microphone</p>
-              <p className="text-sm opacity-75">Tap anywhere to pause</p>
+              <div className="text-base opacity-90">Recording from microphone</div>
+              <div className="text-sm opacity-75">Tap anywhere to pause</div>
             </>
           )}
           {recState === 'paused' && (
             <>
-              <p className="text-base opacity-90">Recording Paused</p>
-              <p className="text-sm opacity-75">Tap anywhere to resume</p>
+              <div className="text-base opacity-90">Recording paused</div>
+              <div className="text-sm opacity-75">Tap anywhere to resume</div>
             </>
           )}
           {recState === 'idle' && (
-            <p className="text-sm opacity-75">Tap anywhere to start</p>
+            <div className="text-sm opacity-75">Tap anywhere to start</div>
+          )}
+          {recState === 'processing' && (
+            <div className="text-base opacity-90">Processing recording…</div>
           )}
         </div>
       </div>
@@ -296,7 +336,7 @@ const Recorder = () => {
               handleDone();
             }}
             disabled={isProcessing || seconds < 1}
-            className="h-12 rounded-2xl text-base font-medium bg-primary-foreground text-foreground hover:bg-primary-foreground/90"
+            className="h-12 rounded-2xl text-base font-medium bg-primary-foreground text-foreground hover:bg-primary-foreground/90 transition-opacity duration-300"
           >
             Done
           </Button>
@@ -306,7 +346,7 @@ const Recorder = () => {
               handleCancel();
             }}
             disabled={isProcessing}
-            className="h-12 rounded-2xl text-base bg-primary-foreground/10 backdrop-blur-xl border-2 border-primary-foreground/20 hover:bg-primary-foreground/15"
+            className="h-12 rounded-2xl text-base bg-primary-foreground/10 backdrop-blur-xl border-2 border-primary-foreground/20 hover:bg-primary-foreground/15 transition-opacity duration-300"
           >
             Cancel
           </Button>

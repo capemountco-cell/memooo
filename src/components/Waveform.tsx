@@ -49,7 +49,7 @@ export const Waveform = ({ analyser }: WaveformProps) => {
       ctx.beginPath();
 
       const step = bufferLength / displayPoints;
-      const sliceWidth = rect.width / displayPoints;
+      const sliceWidth = rect.width / (displayPoints - 1);
       const centerY = rect.height / 2;
       const amplification = 1.5;
 
@@ -89,8 +89,7 @@ export const Waveform = ({ analyser }: WaveformProps) => {
   return (
     <canvas
       ref={canvasRef}
-      className="w-full max-w-2xl mx-auto opacity-90"
-      style={{ width: '700px', height: '200px' }}
+      className="w-full h-24 block opacity-90"
     />
   );
 };

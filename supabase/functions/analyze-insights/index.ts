@@ -73,7 +73,49 @@ Transcript: ${transcript.substring(0, 2000)}`;
 
     console.log('Detected templates:', detectedTemplates);
 
-    // Step 2: Extract structured insights
+    // Step 2: Generate AI title
+    console.log('Generating title...');
+    const titlePrompt = `Create a concise, human-friendly meeting title under 60 chars from this transcript. Prefer topic + purpose. Return raw text only.
+
+Transcript: ${transcript.substring(0, 1500)}`;
+
+    let generatedTitle = `Recording ${new Date().toLocaleDateString()}`;
+    
+    try {
+      const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: titlePrompt }],
+          temperature: 0.7,
+          max_tokens: 30,
+        }),
+      });
+
+      if (titleResponse.ok) {
+        const titleResult = await titleResponse.json();
+        const titleContent = titleResult.choices?.[0]?.message?.content?.trim();
+        if (titleContent && titleContent.length > 0 && titleContent.length <= 60) {
+          generatedTitle = titleContent;
+        }
+      }
+    } catch (error) {
+      console.error('Title generation failed, using default:', error);
+    }
+
+    console.log('Generated title:', generatedTitle);
+
+    // Update session title
+    await supabase
+      .from('sessions')
+      .update({ title: generatedTitle })
+      .eq('id', sessionId);
+
+    // Step 3: Extract structured insights
     const insightsPrompt = `Analyze this ${detectedTemplates.join('/')} meeting transcript and extract structured insights.
 
 Return ONLY valid JSON with this structure:

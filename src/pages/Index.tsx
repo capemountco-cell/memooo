@@ -112,15 +112,16 @@ const Index = () => {
           <h2 className="text-2xl font-bold text-primary-foreground">Recent</h2>
           <div className="space-y-3">
             {sessions.map(session => (
-              <SessionCard
-                key={session.id}
-                id={session.id}
-                title={session.title || 'Untitled Recording'}
-                startedAt={session.started_at}
-                durationSeconds={session.duration_seconds}
-                onDelete={handleDeleteSession}
-                onClick={() => handleSessionClick(session.id)}
-              />
+              <div key={session.id} className="truncate" title={session.title || 'Untitled session'}>
+                <SessionCard
+                  id={session.id}
+                  title={session.title || 'Untitled session'}
+                  startedAt={session.started_at}
+                  durationSeconds={session.duration_seconds}
+                  onDelete={handleDeleteSession}
+                  onClick={() => handleSessionClick(session.id)}
+                />
+              </div>
             ))}
           </div>
         </div>
