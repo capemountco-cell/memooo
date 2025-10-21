@@ -125,7 +125,7 @@ const Summary = () => {
       setTimeout(() => setIsLoading(false), 200);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Failed to load session data');
+      toast.error('Failed to load session data', { duration: 1000 });
       setIsLoading(false);
     }
   };
@@ -156,10 +156,10 @@ const Summary = () => {
       });
 
       await loadData();
-      toast.success('Analysis refreshed');
+      toast.success('Analysis refreshed', { duration: 1000 });
     } catch (error) {
       console.error('Error refreshing analysis:', error);
-      toast.error('Failed to refresh analysis');
+      toast.error('Failed to refresh analysis', { duration: 1000 });
     } finally {
       setIsRefreshing(false);
     }
@@ -180,10 +180,10 @@ const Summary = () => {
       });
 
       await loadData();
-      toast.success('Analysis refreshed');
+      toast.success('Analysis refreshed', { duration: 1000 });
     } catch (error) {
       console.error('Error refreshing:', error);
-      toast.error('Failed to refresh');
+      toast.error('Failed to refresh', { duration: 1000 });
     } finally {
       setIsRefreshing(false);
     }
@@ -208,11 +208,11 @@ const Summary = () => {
       if (data) {
         setTasks([...tasks, data]);
         setNewTaskTitle('');
-        toast.success('Task added');
+        toast.success('Task added', { duration: 1000 });
       }
     } catch (error) {
       console.error('Error adding task:', error);
-      toast.error('Failed to add task');
+      toast.error('Failed to add task', { duration: 1000 });
     }
   };
 
@@ -226,10 +226,10 @@ const Summary = () => {
       if (error) throw error;
 
       setTasks(tasks.map(t => t.id === taskId ? { ...t, ...updates } : t));
-      toast.success('Task updated');
+      toast.success('Task updated', { duration: 1000 });
     } catch (error) {
       console.error('Error updating task:', error);
-      toast.error('Failed to update task');
+      toast.error('Failed to update task', { duration: 1000 });
     }
   };
 
@@ -243,10 +243,10 @@ const Summary = () => {
       if (error) throw error;
 
       setTasks(tasks.filter(t => t.id !== taskId));
-      toast.success('Task deleted');
+      toast.success('Task deleted', { duration: 1000 });
     } catch (error) {
       console.error('Error deleting task:', error);
-      toast.error('Failed to delete task');
+      toast.error('Failed to delete task', { duration: 1000 });
     }
   };
 
@@ -261,10 +261,10 @@ const Summary = () => {
       });
 
       await loadData();
-      toast.success('Tasks regenerated');
+      toast.success('Tasks regenerated', { duration: 1000 });
     } catch (error) {
       console.error('Error regenerating tasks:', error);
-      toast.error('Failed to regenerate tasks');
+      toast.error('Failed to regenerate tasks', { duration: 1000 });
     } finally {
       setIsRefreshing(false);
     }
@@ -290,7 +290,7 @@ ${transcript}
 `;
     
     navigator.clipboard.writeText(note);
-    toast.success('Note copied to clipboard');
+    toast.success('Note copied to clipboard', { duration: 1000 });
   };
 
   if (isLoading) {
