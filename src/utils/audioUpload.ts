@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export const uploadAudioFile = async (audioBlob: Blob, sessionId: string): Promise<string> => {
-  const fileName = `${sessionId}_${Date.now()}.webm`;
+  const fileName = `${sessionId}/${Date.now()}.webm`;
   
   const { data, error } = await supabase.storage
     .from('audio')
@@ -15,11 +15,21 @@ export const uploadAudioFile = async (audioBlob: Blob, sessionId: string): Promi
     throw error;
   }
 
-  const { data: urlData } = supabase.storage
-    .from('audio')
-    .getPublicUrl(data.path);
+  // Store only the path, not a public URL
+  return data.path;
+};
 
-  return urlData.publicUrl;
+export const getAudioSignedUrl = async (path: string): Promise<string> => {
+  const { data, error } = await supabase.storage
+    .from('audio')
+    .createSignedUrl(path, 3600); // 1 hour expiration
+
+  if (error) {
+    console.error('Error creating signed URL:', error);
+    throw error;
+  }
+
+  return data.signedUrl;
 };
 
 export const convertBlobToBase64 = (blob: Blob): Promise<string> => {

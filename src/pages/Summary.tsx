@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import fflogo from '@/assets/fflogo.svg';
+import { getAudioSignedUrl } from '@/utils/audioUpload';
 
 interface Session {
   id: string;
@@ -69,11 +70,21 @@ const Summary = () => {
   const [loadingLabel, setLoadingLabel] = useState('Loading session...');
   const [isLoading, setIsLoading] = useState(true);
   const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [audioSignedUrl, setAudioSignedUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     loadData();
   }, [id]);
+
+  useEffect(() => {
+    // Load signed URL for audio if available
+    if (session?.audio_url) {
+      getAudioSignedUrl(session.audio_url)
+        .then(setAudioSignedUrl)
+        .catch(err => console.error('Error loading audio URL:', err));
+    }
+  }, [session?.audio_url]);
 
   const loadData = async () => {
     if (!id) return;
@@ -210,8 +221,11 @@ const Summary = () => {
       setIsRefreshing(true);
       toast.info('Retrying transcription...', { duration: 2000 });
       
+      // Get signed URL for the audio file
+      const signedUrl = await getAudioSignedUrl(session.audio_url);
+      
       // Fetch the audio file
-      const response = await fetch(session.audio_url);
+      const response = await fetch(signedUrl);
       const audioBlob = await response.blob();
       
       // Convert to base64
@@ -535,10 +549,10 @@ const Summary = () => {
                 <p className="text-sm text-muted-foreground">
                   The audio was saved, but transcription failed. You can listen to the recording below and retry transcription.
                 </p>
-                {session.audio_url && (
+                {session.audio_url && audioSignedUrl && (
                   <div className="space-y-2">
                     <audio controls className="w-full">
-                      <source src={session.audio_url} type="audio/webm" />
+                      <source src={audioSignedUrl} type="audio/webm" />
                       Your browser does not support the audio element.
                     </audio>
                     <Button
