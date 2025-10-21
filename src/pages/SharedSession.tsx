@@ -20,54 +20,44 @@ export default function SharedSession() {
 
     setIsVerifying(true);
     try {
-      // Get shared session
-      const { data: sharedSession, error: sharedError } = await supabase
-        .from('shared_sessions')
-        .select('*')
-        .eq('slug', slug)
-        .eq('pin', pin)
-        .single();
+      // Call the secure function to verify PIN and get session data
+      const { data, error } = await supabase
+        .rpc('verify_shared_session_pin', {
+          p_slug: slug,
+          p_pin: pin,
+        });
 
-      if (sharedError || !sharedSession) {
+      if (error) throw error;
+
+      // If no data returned, PIN was invalid
+      if (!data || data.length === 0) {
         toast.error('Invalid PIN', { duration: 1000 });
         setIsVerifying(false);
         return;
       }
 
-      // Update view count
-      await supabase
-        .from('shared_sessions')
-        .update({ view_count: sharedSession.view_count + 1 })
-        .eq('id', sharedSession.id);
+      const result = data[0];
 
-      // Load session data
-      const { data: session } = await supabase
-        .from('sessions')
-        .select('*')
-        .eq('id', sharedSession.session_id)
-        .single();
+      // Parse the tasks data
+      const tasks = result.tasks_data || [];
 
-      const { data: summary } = await supabase
-        .from('summaries')
-        .select('*')
-        .eq('session_id', sharedSession.session_id)
-        .maybeSingle();
-
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('session_id', sharedSession.session_id)
-        .order('created_at', { ascending: true });
-
-      const { data: transcriptData } = await supabase
-        .from('transcripts')
-        .select('text')
-        .eq('session_id', sharedSession.session_id)
-        .order('created_at', { ascending: true });
-
-      const transcript = transcriptData?.map(t => t.text).join(' ') || '';
-
-      setSessionData({ session, summary, tasks, transcript });
+      setSessionData({
+        session: {
+          id: result.session_id,
+          title: result.session_title,
+          status: result.session_status,
+          started_at: result.session_started_at,
+          duration_seconds: result.session_duration_seconds,
+        },
+        summary: {
+          overview: result.overview,
+          key_topics: result.key_topics,
+          action_items: result.action_items,
+        },
+        tasks,
+        transcript: result.transcript_text || '',
+      });
+      
       setIsAuthenticated(true);
       toast.success('Access granted', { duration: 1000 });
     } catch (error) {

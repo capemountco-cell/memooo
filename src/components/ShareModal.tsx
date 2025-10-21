@@ -27,19 +27,27 @@ export const ShareModal = ({ open, onOpenChange, sessionId }: ShareModalProps) =
   const generateShareLink = async () => {
     setIsGenerating(true);
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Authentication required', { duration: 1000 });
+        return;
+      }
+
       // Generate random PIN (6 digits)
       const pin = Math.floor(100000 + Math.random() * 900000).toString();
       
       // Generate random slug (8 characters)
       const slug = Math.random().toString(36).substring(2, 10);
       
-      // Insert into shared_sessions
+      // Insert into shared_sessions with owner_user_id
       const { error } = await supabase
         .from('shared_sessions')
         .insert({
           session_id: sessionId,
           pin,
           slug,
+          owner_user_id: user.id,
         });
 
       if (error) throw error;

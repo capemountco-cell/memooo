@@ -87,6 +87,7 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          owner_user_id: string | null
           pin: string
           session_id: string
           slug: string
@@ -96,6 +97,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          owner_user_id?: string | null
           pin: string
           session_id: string
           slug: string
@@ -105,6 +107,7 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          owner_user_id?: string | null
           pin?: string
           session_id?: string
           slug?: string
@@ -269,7 +272,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      verify_shared_session_pin: {
+        Args: { p_pin: string; p_slug: string }
+        Returns: {
+          action_items: Json
+          key_topics: string[]
+          overview: string
+          session_duration_seconds: number
+          session_id: string
+          session_started_at: string
+          session_status: string
+          session_title: string
+          shared_session_id: string
+          tasks_data: Json
+          transcript_text: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
