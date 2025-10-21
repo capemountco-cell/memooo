@@ -40,12 +40,19 @@ export const ShareModal = ({ open, onOpenChange, sessionId }: ShareModalProps) =
       // Generate random slug (8 characters)
       const slug = Math.random().toString(36).substring(2, 10);
       
-      // Insert into shared_sessions with owner_user_id
+      // Hash the PIN using SHA-256
+      const encoder = new TextEncoder();
+      const data = encoder.encode(pin);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const pin_hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Insert into shared_sessions with hashed PIN
       const { error } = await supabase
         .from('shared_sessions')
         .insert({
           session_id: sessionId,
-          pin,
+          pin_hash,
           slug,
           owner_user_id: user.id,
         });

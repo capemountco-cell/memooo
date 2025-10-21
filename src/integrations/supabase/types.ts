@@ -88,7 +88,7 @@ export type Database = {
           expires_at: string | null
           id: string
           owner_user_id: string | null
-          pin: string
+          pin_hash: string
           session_id: string
           slug: string
           view_count: number
@@ -98,7 +98,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           owner_user_id?: string | null
-          pin: string
+          pin_hash: string
           session_id: string
           slug: string
           view_count?: number
@@ -108,7 +108,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           owner_user_id?: string | null
-          pin?: string
+          pin_hash?: string
           session_id?: string
           slug?: string
           view_count?: number
