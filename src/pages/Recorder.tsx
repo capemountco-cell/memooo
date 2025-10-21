@@ -278,7 +278,7 @@ const Recorder = () => {
           // Fallback to Whisper if Deepgram fails
           if (transcriptError || !transcriptData?.success) {
             console.log('Deepgram failed, falling back to Whisper...');
-            setProgressLabel('Transcribing (Whisper fallback)...');
+            setProgressLabel('Transcribing...');
             
             try {
               const whisperResult = await supabase.functions.invoke(
