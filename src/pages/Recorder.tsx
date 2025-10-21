@@ -303,8 +303,22 @@ const Recorder = () => {
           clearInterval(progressInterval);
           setProgress(75);
 
+          // Handle transcription failure - save audio anyway
           if (transcriptError || !transcriptData?.success) {
-            throw new Error('Both Deepgram and Whisper transcription failed');
+            console.error('Transcription failed, saving audio anyway');
+            
+            // Mark session as transcription_failed
+            await supabase
+              .from('sessions')
+              .update({ status: 'transcription_failed' })
+              .eq('id', sessionId);
+
+            setProgress(100);
+            toast.error('Transcription failed, but audio saved. You can retry from the summary page.', { duration: 3000 });
+            
+            // Navigate to summary page anyway
+            setTimeout(() => navigate(`/summary/${sessionId}`), 500);
+            return;
           }
 
           transcript = transcriptData.text;

@@ -19,6 +19,8 @@ interface Session {
   id: string;
   title: string;
   started_at: string;
+  status: string;
+  audio_url: string | null;
 }
 
 interface Summary {
@@ -187,6 +189,103 @@ const Summary = () => {
     } catch (error) {
       console.error('Error refreshing:', error);
       toast.error('Failed to refresh', { duration: 1000 });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handleRetryTranscription = async () => {
+    if (!id || !session?.audio_url) return;
+    
+    try {
+      setIsRefreshing(true);
+      toast.info('Retrying transcription...', { duration: 2000 });
+      
+      // Fetch the audio file
+      const response = await fetch(session.audio_url);
+      const audioBlob = await response.blob();
+      
+      // Convert to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      const base64Audio = await new Promise<string>((resolve) => {
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+      });
+      
+      // Try Deepgram first
+      let transcriptData, transcriptError;
+      
+      try {
+        const deepgramResult = await supabase.functions.invoke(
+          'transcribe-deepgram',
+          {
+            body: {
+              base64Audio,
+              mimeType: 'audio/webm;codecs=opus',
+              sessionId: id,
+            },
+          }
+        );
+        transcriptData = deepgramResult.data;
+        transcriptError = deepgramResult.error;
+      } catch (err) {
+        console.error('Deepgram error:', err);
+        transcriptError = err;
+      }
+
+      // Fallback to Whisper if Deepgram fails
+      if (transcriptError || !transcriptData?.success) {
+        console.log('Deepgram failed, falling back to Whisper...');
+        
+        try {
+          const whisperResult = await supabase.functions.invoke(
+            'transcribe-whisper',
+            {
+              body: {
+                base64Audio,
+                mimeType: 'audio/webm;codecs=opus',
+                sessionId: id,
+              },
+            }
+          );
+          transcriptData = whisperResult.data;
+          transcriptError = whisperResult.error;
+        } catch (err) {
+          console.error('Whisper error:', err);
+          transcriptError = err;
+        }
+      }
+
+      if (transcriptError || !transcriptData?.success) {
+        throw new Error('Both Deepgram and Whisper transcription failed');
+      }
+
+      const newTranscript = transcriptData.text;
+      
+      // Run analysis
+      await supabase.functions.invoke('analyze-insights', {
+        body: { sessionId: id, transcript: newTranscript },
+      });
+
+      // Extract tasks
+      await supabase.functions.invoke('extract-tasks', {
+        body: { session_id: id, overwrite: true },
+      });
+
+      // Mark session as ready
+      await supabase
+        .from('sessions')
+        .update({ status: 'ready' })
+        .eq('id', id);
+
+      await loadData();
+      toast.success('Transcription completed successfully!', { duration: 2000 });
+    } catch (error) {
+      console.error('Error retrying transcription:', error);
+      toast.error('Transcription failed again. Please try later.', { duration: 2000 });
     } finally {
       setIsRefreshing(false);
     }
@@ -421,6 +520,36 @@ const Summary = () => {
       </header>
 
       <div className="p-4 space-y-4">
+        {session?.status === 'transcription_failed' && (
+          <Card className="border-destructive">
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="text-destructive font-semibold">⚠️ Transcription Failed</div>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  The audio was saved, but transcription failed. You can listen to the recording below and retry transcription.
+                </p>
+                {session.audio_url && (
+                  <div className="space-y-2">
+                    <audio controls className="w-full">
+                      <source src={session.audio_url} type="audio/webm" />
+                      Your browser does not support the audio element.
+                    </audio>
+                    <Button
+                      onClick={handleRetryTranscription}
+                      disabled={isRefreshing}
+                      className="w-full"
+                    >
+                      <RefreshCw size={16} className={isRefreshing ? 'animate-spin mr-2' : 'mr-2'} />
+                      Retry Transcription
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Tabs defaultValue="insights" className="w-full">
           <TabsList className="w-full grid grid-cols-3">
