@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,12 @@ export const ShareModal = ({ open, onOpenChange, sessionId }: ShareModalProps) =
   const [shareData, setShareData] = useState<{ url: string; pin: string; slug: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (open && !shareData) {
+      generateShareLink();
+    }
+  }, [open]);
 
   const generateShareLink = async () => {
     setIsGenerating(true);
@@ -71,16 +77,12 @@ export const ShareModal = ({ open, onOpenChange, sessionId }: ShareModalProps) =
           <DialogTitle>Share Recording</DialogTitle>
         </DialogHeader>
         
-        {!shareData ? (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Generate a secure shareable link with a PIN code to share this recording
-            </p>
-            <Button onClick={generateShareLink} disabled={isGenerating}>
-              {isGenerating ? 'Generating...' : 'Generate Share Link'}
-            </Button>
+        {isGenerating ? (
+          <div className="flex flex-col items-center gap-4 py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">Generating share link...</p>
           </div>
-        ) : (
+        ) : shareData ? (
           <div className="flex flex-col items-center gap-6 py-4">
             {/* QR Code */}
             <div className="bg-white p-4 rounded-lg">
@@ -120,7 +122,7 @@ export const ShareModal = ({ open, onOpenChange, sessionId }: ShareModalProps) =
               </p>
             </div>
           </div>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   );
