@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, RefreshCw, Share2, Download } from 'lucide-react';
+import { ChevronLeft, RefreshCw, Share2, Download, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +44,15 @@ interface Task {
   priority: string;
   source: string;
 }
+
+const formatTranscript = (raw: string) => {
+  return raw.split(/\n{2,}/).map((block) => {
+    const [first, ...rest] = block.split('\n');
+    const cleaned = first.replace(/^\*{1,3}|\*{1,3}$/g, '');
+    const isHeading = cleaned.length <= 120 && (/:$/.test(cleaned) || /^[A-Z].{0,}$/.test(cleaned));
+    return { heading: isHeading ? cleaned : null, body: isHeading ? rest.join('\n') : block };
+  });
+};
 
 const Summary = () => {
   const { id } = useParams<{ id: string }>();
@@ -357,16 +366,17 @@ const Summary = () => {
 
     try {
       setIsRefreshing(true);
+      toast.info('Submitted — generating tasks…', { duration: 1000 });
       
       await supabase.functions.invoke('extract-tasks', {
         body: { session_id: id, overwrite: true },
       });
 
       await loadData();
-      toast.success('Tasks regenerated', { duration: 1000 });
+      toast.success('Tasks generated', { duration: 1000 });
     } catch (error) {
       console.error('Error regenerating tasks:', error);
-      toast.error('Failed to regenerate tasks', { duration: 1000 });
+      toast.error('Failed to generate tasks', { duration: 1000 });
     } finally {
       setIsRefreshing(false);
     }
@@ -501,13 +511,8 @@ const Summary = () => {
           >
             <ChevronLeft size={24} />
           </Button>
-          <img src={fflogo} alt="Firefly" className="h-10 opacity-90" />
         </div>
         <div className="flex items-center gap-2">
-          <TemplateSelect
-            selectedTemplates={templates}
-            onTemplatesChange={handleTemplatesChange}
-          />
           <Button
             variant="ghost"
             size="icon"
@@ -681,8 +686,12 @@ const Summary = () => {
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
               />
-              <Button onClick={handleRegenerateTasks} variant="outline" disabled={isRefreshing}>
-                Regenerate from transcript
+              <Button 
+                onClick={handleRegenerateTasks} 
+                disabled={isRefreshing}
+                className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl"
+              >
+                <Send className="h-4 w-4" /> Submit
               </Button>
             </div>
 
@@ -720,10 +729,13 @@ const Summary = () => {
                     <Skeleton className="h-4 w-4/5" />
                   </div>
                 ) : (
-                  <div className="prose prose-sm max-w-none text-muted-foreground">
-                    <div className="whitespace-pre-wrap leading-relaxed">
-                      {transcript}
-                    </div>
+                  <div className="space-y-4">
+                    {formatTranscript(transcript).map((block, i) => (
+                      <div key={i} className="mb-4">
+                        {block.heading && <p className="font-semibold text-[15px] mb-1">{block.heading}</p>}
+                        {block.body && <p className="text-[15px] leading-6 text-muted-foreground whitespace-pre-wrap">{block.body}</p>}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -742,6 +754,10 @@ const Summary = () => {
           </Button>
         </div>
       </div>
+
+      <footer className="w-full flex justify-center py-6 opacity-80">
+        <img src={fflogo} alt="Firefly" className="h-12" />
+      </footer>
 
       <ShareModal
         open={shareModalOpen}

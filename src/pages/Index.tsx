@@ -18,6 +18,12 @@ const Index = () => {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [hasActiveRecording, setHasActiveRecording] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
 
   useEffect(() => {
     loadRecentSessions();
@@ -103,15 +109,15 @@ const Index = () => {
 
   const bgColor = hasActiveRecording 
     ? 'bg-primary' 
-    : 'bg-foreground';
+    : 'bg-black';
 
   return (
     <div 
       onClick={handleStartRecording}
-      className={`min-h-screen ${bgColor} transition-colors duration-1000 flex flex-col items-center justify-center p-6 cursor-pointer`}
+      className={`min-h-screen ${bgColor} transition-colors duration-500 flex flex-col items-center justify-center p-6 cursor-pointer`}
       style={{ minHeight: '100svh' }}
     >
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl">
+      <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-2xl opacity-0 translate-y-2 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : ''}`}>
         <img src={fflogo} alt="Firefly" className="h-20 mb-12 brightness-0 invert" />
         <div onClick={handleStartRecording} className="cursor-pointer">
           <RecordButton isRecording={hasActiveRecording} onClick={handleStartRecording} />
@@ -121,7 +127,7 @@ const Index = () => {
       {sessions.length > 0 && (
         <div 
           onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-2xl space-y-4 pb-8"
+          className={`w-full max-w-2xl space-y-4 pb-8 opacity-0 translate-y-2 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : ''}`}
         >
           <h2 className="text-2xl font-bold text-primary-foreground">Recent</h2>
           <div className="space-y-3">
