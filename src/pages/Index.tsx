@@ -97,7 +97,8 @@ const Index = () => {
 
   return (
     <div 
-      className={`min-h-screen ${bgColor} transition-colors duration-1000 flex flex-col items-center justify-center p-6`}
+      onClick={handleStartRecording}
+      className={`min-h-screen ${bgColor} transition-colors duration-1000 flex flex-col items-center justify-center p-6 cursor-pointer`}
       style={{ minHeight: '100svh' }}
     >
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl">
@@ -108,7 +109,10 @@ const Index = () => {
       </div>
 
       {sessions.length > 0 && (
-        <div className="w-full max-w-2xl space-y-4 pb-8">
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-2xl space-y-4 pb-8"
+        >
           <h2 className="text-2xl font-bold text-primary-foreground">Recent</h2>
           <div className="space-y-3">
             {sessions.map(session => (
