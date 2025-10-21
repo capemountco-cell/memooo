@@ -68,12 +68,21 @@ const Recorder = () => {
       setSeconds(0);
 
       try {
-        // Create session
+        // Ensure anonymous auth
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast.error("Couldn't initialize secure session", { duration: 1000 });
+          setTimeout(() => navigate('/'), 1200);
+          return;
+        }
+
+        // Create session with owner
         const { data: session, error } = await supabase
           .from('sessions')
           .insert({
             title: `Recording ${new Date().toLocaleDateString()}`,
             status: 'recording',
+            owner_user_id: user.id
           })
           .select()
           .single();
