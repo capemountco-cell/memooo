@@ -118,6 +118,7 @@ const Recorder = () => {
           console.error('MediaRecorder error', e);
           toast.error('Recording error.', { duration: 1000 });
           cleanup();
+          setSeconds(0);
           setRecState('error');
         };
 
@@ -126,6 +127,7 @@ const Recorder = () => {
         console.error('Failed to start recording', err);
         toast.error('Failed to start recording. Check mic permissions.', { duration: 1000 });
         cleanup();
+        setSeconds(0);
         setRecState('error');
         // Return to home after brief delay
         setTimeout(() => navigate('/'), 1200);
@@ -335,7 +337,7 @@ const Recorder = () => {
               e.stopPropagation();
               handleDone();
             }}
-            disabled={isProcessing || seconds < 1}
+            disabled={isProcessing || seconds < 1 || recState === 'error' || recState === 'initializing' || !mediaRecorderRef.current}
             className="h-12 rounded-2xl text-base font-medium bg-primary-foreground text-foreground hover:bg-primary-foreground/90 transition-opacity duration-300"
           >
             Done
