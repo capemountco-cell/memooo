@@ -31,6 +31,33 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Helper function to extract and parse JSON from AI response
+    const extractJSON = (content: string) => {
+      if (!content) return null;
+      
+      try {
+        return JSON.parse(content);
+      } catch {
+        // Try to extract JSON from markdown code blocks
+        const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+        if (jsonMatch) {
+          try {
+            return JSON.parse(jsonMatch[1]);
+          } catch {}
+        }
+        
+        // Try to find JSON array in the text
+        const arrayMatch = content.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          try {
+            return JSON.parse(arrayMatch[0]);
+          } catch {}
+        }
+      }
+      
+      return null;
+    };
+
     // Get transcript
     const { data: transcripts, error: fetchError } = await supabase
       .from('transcripts')
@@ -95,7 +122,10 @@ Transcript: ${transcript}`;
 
         if (response.ok) {
           result = await response.json();
+          console.log('OpenAI task extraction successful');
         } else {
+          const errorText = await response.text();
+          console.error('OpenAI API error:', response.status, errorText);
           throw new Error('OpenAI failed');
         }
       } catch (error) {
@@ -125,19 +155,26 @@ Transcript: ${transcript}`;
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Gemini API error:', response.status, errorText);
         throw new Error('Both OpenAI and Gemini failed for task extraction');
       }
 
       result = await response.json();
+      console.log('Gemini task extraction successful');
     }
     const content = result.choices?.[0]?.message?.content || '[]';
+    console.log('Task extraction response length:', content.length);
+    console.log('Task extraction response preview:', content.substring(0, 200));
     
-    let extractedTasks;
-    try {
-      extractedTasks = JSON.parse(content);
-    } catch {
-      extractedTasks = [];
+    const extractedTasks = extractJSON(content) || [];
+    
+    if (!Array.isArray(extractedTasks)) {
+      console.error('Extracted tasks is not an array:', extractedTasks);
+      throw new Error('Invalid task extraction response format');
     }
+    
+    console.log('Extracted tasks count:', extractedTasks.length);
 
     // If overwrite, delete existing AI tasks
     if (overwrite) {

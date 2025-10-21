@@ -37,6 +37,48 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Helper function to extract and parse JSON from AI response
+    const extractJSON = (content: string) => {
+      if (!content) return null;
+      
+      // Try direct parse first
+      try {
+        return JSON.parse(content);
+      } catch {
+        // Try to extract JSON from markdown code blocks
+        const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          try {
+            return JSON.parse(jsonMatch[1]);
+          } catch {
+            console.error('Failed to parse JSON from markdown block');
+          }
+        }
+        
+        // Try to find JSON object in the text
+        const objectMatch = content.match(/\{[\s\S]*\}/);
+        if (objectMatch) {
+          try {
+            return JSON.parse(objectMatch[0]);
+          } catch {
+            console.error('Failed to parse JSON object from text');
+          }
+        }
+        
+        // Try to find JSON array in the text
+        const arrayMatch = content.match(/\[[\s\S]*\]/);
+        if (arrayMatch) {
+          try {
+            return JSON.parse(arrayMatch[0]);
+          } catch {
+            console.error('Failed to parse JSON array from text');
+          }
+        }
+      }
+      
+      return null;
+    };
+
     // Helper function to call AI with fallback
     const callAI = async (messages: any[], temperature = 0.3, maxTokens?: number) => {
       // Try OpenAI first if available
@@ -59,10 +101,15 @@ serve(async (req) => {
           });
           
           if (response.ok) {
-            return await response.json();
+            const result = await response.json();
+            console.log('OpenAI response received');
+            return result;
+          } else {
+            const errorText = await response.text();
+            console.error('OpenAI API error:', response.status, errorText);
           }
         } catch (error) {
-          console.log('OpenAI failed, falling back to Gemini:', error);
+          console.error('OpenAI failed, falling back to Gemini:', error);
         }
       }
       
@@ -81,10 +128,14 @@ serve(async (req) => {
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Gemini API error:', response.status, errorText);
         throw new Error('Both OpenAI and Gemini failed');
       }
       
-      return await response.json();
+      const result = await response.json();
+      console.log('Gemini response received');
+      return result;
     };
 
     // Step 1: Detect meeting templates
@@ -99,11 +150,9 @@ Transcript: ${transcript.substring(0, 2000)}`;
       try {
         const templateResult = await callAI([{ role: 'user', content: templatePrompt }], 0.3);
         const content = templateResult.choices?.[0]?.message?.content || '["Other"]';
-        try {
-          detectedTemplates = JSON.parse(content);
-        } catch {
-          detectedTemplates = ['Other'];
-        }
+        console.log('Template detection response:', content.substring(0, 200));
+        const parsed = extractJSON(content);
+        detectedTemplates = parsed || ['Other'];
       } catch (error) {
         console.error('Template detection failed:', error);
         detectedTemplates = ['Other'];
@@ -185,12 +234,22 @@ Transcript: ${formattedTranscript}`;
 
     const insightsResult = await callAI([{ role: 'user', content: insightsPrompt }], 0.5);
     const content = insightsResult.choices?.[0]?.message?.content || '{}';
+    console.log('Insights response length:', content.length);
+    console.log('Insights response preview:', content.substring(0, 300));
     
-    let insights;
-    try {
-      insights = JSON.parse(content);
-    } catch {
-      insights = { overview: 'Analysis failed', key_topics: [], decisions: [], questions: [], risks: [], followups: [], dates: [], participants: [] };
+    const insights = extractJSON(content) || { 
+      overview: 'Unable to parse AI response. Please try refreshing the analysis.', 
+      key_topics: [], 
+      decisions: [], 
+      questions: [], 
+      risks: [], 
+      followups: [], 
+      dates: [], 
+      participants: [] 
+    };
+    
+    if (!insights.overview || insights.overview === 'Unable to parse AI response. Please try refreshing the analysis.') {
+      console.error('Failed to extract valid insights from AI response');
     }
 
     // Save to summaries table - first check if exists
