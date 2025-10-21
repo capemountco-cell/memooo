@@ -21,8 +21,10 @@ serve(async (req) => {
     }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!openaiApiKey && !lovableApiKey) {
+      throw new Error('No AI API key configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -65,32 +67,69 @@ If owner or due_date not mentioned, omit those fields.
 
 Transcript: ${transcript}`;
 
-    console.log('Calling OpenAI for task extraction...');
+    console.log('Calling AI for task extraction...');
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that extracts action items. Each must start with a verb (Send, Schedule, Decide, Follow up, Prepare). Infer owner/due date when mentioned. Return JSON only.',
+    let result;
+    
+    // Try OpenAI first if available
+    if (openaiApiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
           },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-      }),
-    });
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a helpful assistant that extracts action items. Each must start with a verb (Send, Schedule, Decide, Follow up, Prepare). Infer owner/due date when mentioned. Return JSON only.',
+              },
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.3,
+          }),
+        });
 
-    if (!response.ok) {
-      throw new Error('Task extraction failed');
+        if (response.ok) {
+          result = await response.json();
+        } else {
+          throw new Error('OpenAI failed');
+        }
+      } catch (error) {
+        console.log('OpenAI failed, falling back to Gemini:', error);
+      }
     }
+    
+    // Fallback to Gemini if OpenAI failed or not available
+    if (!result) {
+      console.log('Using Gemini fallback...');
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant that extracts action items. Each must start with a verb (Send, Schedule, Decide, Follow up, Prepare). Infer owner/due date when mentioned. Return JSON only.',
+            },
+            { role: 'user', content: prompt }
+          ],
+        }),
+      });
 
-    const result = await response.json();
+      if (!response.ok) {
+        throw new Error('Both OpenAI and Gemini failed for task extraction');
+      }
+
+      result = await response.json();
+    }
     const content = result.choices?.[0]?.message?.content || '[]';
     
     let extractedTasks;

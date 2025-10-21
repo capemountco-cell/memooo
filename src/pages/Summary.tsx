@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, RefreshCw, Copy, Download } from 'lucide-react';
+import { ChevronLeft, RefreshCw, Share2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { TemplateSelect } from '@/components/TemplateSelect';
 import { TaskItem } from '@/components/TaskItem';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareModal } from '@/components/ShareModal';
 import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
 import fflogo from '@/assets/fflogo.svg';
 
 interface Session {
@@ -55,6 +57,7 @@ const Summary = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingLabel, setLoadingLabel] = useState('Loading session...');
   const [isLoading, setIsLoading] = useState(true);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -270,27 +273,108 @@ const Summary = () => {
     }
   };
 
-  const handleCopyNote = () => {
-    const note = `# ${session?.title || 'Recording'}
+  const handleExportPDF = async () => {
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = 20;
 
-## Overview
-${summary?.overview || 'No overview available'}
+      // Add logo
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Firefly', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 15;
 
-## Key Topics
-${summary?.key_topics?.map(t => `- ${t}`).join('\n') || 'None'}
+      // Add title
+      pdf.setFontSize(16);
+      pdf.text(session?.title || 'Recording', margin, yPos);
+      yPos += 10;
 
-## Decisions
-${summary?.decisions?.map(d => `- ${d}`).join('\n') || 'None'}
+      // Add overview
+      if (summary?.overview) {
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Overview', margin, yPos);
+        yPos += 7;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        const overviewLines = pdf.splitTextToSize(summary.overview, pageWidth - 2 * margin);
+        pdf.text(overviewLines, margin, yPos);
+        yPos += overviewLines.length * 5 + 5;
+      }
 
-## Action Items
-${tasks.filter(t => t.status === 'open').map(t => `- [ ] ${t.title}${t.owner ? ` (@${t.owner})` : ''}`).join('\n') || 'None'}
+      // Add key topics
+      if (summary?.key_topics && summary.key_topics.length > 0) {
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Key Topics', margin, yPos);
+        yPos += 7;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        summary.key_topics.forEach((topic: string) => {
+          const topicLines = pdf.splitTextToSize(`• ${topic}`, pageWidth - 2 * margin);
+          pdf.text(topicLines, margin, yPos);
+          yPos += topicLines.length * 5;
+        });
+        yPos += 5;
+      }
 
-## Transcript
-${transcript}
-`;
-    
-    navigator.clipboard.writeText(note);
-    toast.success('Note copied to clipboard', { duration: 1000 });
+      // Add action items
+      const openTasks = tasks.filter(t => t.status === 'open');
+      if (openTasks.length > 0) {
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Action Items', margin, yPos);
+        yPos += 7;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        openTasks.forEach((task) => {
+          const taskText = `• ${task.title}${task.owner ? ` (@${task.owner})` : ''}`;
+          const taskLines = pdf.splitTextToSize(taskText, pageWidth - 2 * margin);
+          pdf.text(taskLines, margin, yPos);
+          yPos += taskLines.length * 5;
+        });
+        yPos += 5;
+      }
+
+      // Add transcript
+      if (transcript) {
+        if (yPos > 200) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Transcript', margin, yPos);
+        yPos += 7;
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        const transcriptLines = pdf.splitTextToSize(transcript, pageWidth - 2 * margin);
+        transcriptLines.forEach((line: string) => {
+          if (yPos > 280) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          pdf.text(line, margin, yPos);
+          yPos += 4;
+        });
+      }
+
+      pdf.save(`${session?.title || 'recording'}.pdf`);
+      toast.success('PDF exported', { duration: 1000 });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Failed to export PDF', { duration: 1000 });
+    }
   };
 
   if (isLoading) {
@@ -318,23 +402,25 @@ ${transcript}
           >
             <ChevronLeft size={24} />
           </Button>
-          <img src={fflogo} alt="Firefly" className="h-7 opacity-90" />
+          <img src={fflogo} alt="Firefly" className="h-10 opacity-90" />
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
-        </Button>
+        <div className="flex items-center gap-2">
+          <TemplateSelect
+            selectedTemplates={templates}
+            onTemplatesChange={handleTemplatesChange}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw size={20} className={isRefreshing ? 'animate-spin' : ''} />
+          </Button>
+        </div>
       </header>
 
       <div className="p-4 space-y-4">
-        <TemplateSelect
-          selectedTemplates={templates}
-          onTemplatesChange={handleTemplatesChange}
-        />
 
         <Tabs defaultValue="insights" className="w-full">
           <TabsList className="w-full grid grid-cols-3">
@@ -517,16 +603,22 @@ ${transcript}
         </Tabs>
 
         <div className="flex gap-2 pt-4 pb-8">
-          <Button onClick={handleCopyNote} variant="outline" className="flex-1">
-            <Copy size={16} className="mr-2" />
-            Copy Note
+          <Button onClick={() => setShareModalOpen(true)} variant="outline" className="flex-1">
+            <Share2 size={16} className="mr-2" />
+            Share
           </Button>
-          <Button variant="outline" className="flex-1">
+          <Button onClick={handleExportPDF} variant="outline" className="flex-1">
             <Download size={16} className="mr-2" />
             Export PDF
           </Button>
         </div>
       </div>
+
+      <ShareModal
+        open={shareModalOpen}
+        onOpenChange={setShareModalOpen}
+        sessionId={id!}
+      />
     </div>
   );
 };

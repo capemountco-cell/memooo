@@ -27,13 +27,65 @@ serve(async (req) => {
     }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OPENAI_API_KEY not configured');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!openaiApiKey && !lovableApiKey) {
+      throw new Error('No AI API key configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Helper function to call AI with fallback
+    const callAI = async (messages: any[], temperature = 0.3, maxTokens?: number) => {
+      // Try OpenAI first if available
+      if (openaiApiKey) {
+        try {
+          const body: any = {
+            model: 'gpt-4o-mini',
+            messages,
+            temperature,
+          };
+          if (maxTokens) body.max_tokens = maxTokens;
+
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+          });
+          
+          if (response.ok) {
+            return await response.json();
+          }
+        } catch (error) {
+          console.log('OpenAI failed, falling back to Gemini:', error);
+        }
+      }
+      
+      // Fallback to Gemini via Lovable AI
+      console.log('Using Gemini fallback...');
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${lovableApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Both OpenAI and Gemini failed');
+      }
+      
+      return await response.json();
+    };
 
     // Step 1: Detect meeting templates
     let detectedTemplates = overrideTemplates;
@@ -44,30 +96,17 @@ serve(async (req) => {
 
 Transcript: ${transcript.substring(0, 2000)}`;
 
-      const templateResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: templatePrompt }],
-          temperature: 0.3,
-        }),
-      });
-
-      if (!templateResponse.ok) {
-        console.error('Template detection failed');
-        detectedTemplates = ['Other'];
-      } else {
-        const templateResult = await templateResponse.json();
+      try {
+        const templateResult = await callAI([{ role: 'user', content: templatePrompt }], 0.3);
         const content = templateResult.choices?.[0]?.message?.content || '["Other"]';
         try {
           detectedTemplates = JSON.parse(content);
         } catch {
           detectedTemplates = ['Other'];
         }
+      } catch (error) {
+        console.error('Template detection failed:', error);
+        detectedTemplates = ['Other'];
       }
     }
 
@@ -82,26 +121,10 @@ Transcript: ${transcript.substring(0, 1500)}`;
     let generatedTitle = `Recording ${new Date().toLocaleDateString()}`;
     
     try {
-      const titleResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: titlePrompt }],
-          temperature: 0.7,
-          max_tokens: 30,
-        }),
-      });
-
-      if (titleResponse.ok) {
-        const titleResult = await titleResponse.json();
-        const titleContent = titleResult.choices?.[0]?.message?.content?.trim();
-        if (titleContent && titleContent.length > 0 && titleContent.length <= 60) {
-          generatedTitle = titleContent;
-        }
+      const titleResult = await callAI([{ role: 'user', content: titlePrompt }], 0.7, 30);
+      const titleContent = titleResult.choices?.[0]?.message?.content?.trim();
+      if (titleContent && titleContent.length > 0 && titleContent.length <= 60) {
+        generatedTitle = titleContent;
       }
     } catch (error) {
       console.error('Title generation failed, using default:', error);
@@ -124,25 +147,10 @@ Transcript: ${transcript}`;
     let formattedTranscript = transcript;
     
     try {
-      const formatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: formatPrompt }],
-          temperature: 0.3,
-        }),
-      });
-
-      if (formatResponse.ok) {
-        const formatResult = await formatResponse.json();
-        const formatted = formatResult.choices?.[0]?.message?.content?.trim();
-        if (formatted && formatted.length > 0) {
-          formattedTranscript = formatted;
-        }
+      const formatResult = await callAI([{ role: 'user', content: formatPrompt }], 0.3);
+      const formatted = formatResult.choices?.[0]?.message?.content?.trim();
+      if (formatted && formatted.length > 0) {
+        formattedTranscript = formatted;
       }
     } catch (error) {
       console.error('Transcript formatting failed, using original:', error);
@@ -175,24 +183,7 @@ Transcript: ${formattedTranscript}`;
 
     console.log('Extracting insights...');
 
-    const insightsResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: insightsPrompt }],
-        temperature: 0.5,
-      }),
-    });
-
-    if (!insightsResponse.ok) {
-      throw new Error('Insights extraction failed');
-    }
-
-    const insightsResult = await insightsResponse.json();
+    const insightsResult = await callAI([{ role: 'user', content: insightsPrompt }], 0.5);
     const content = insightsResult.choices?.[0]?.message?.content || '{}';
     
     let insights;

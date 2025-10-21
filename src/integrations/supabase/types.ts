@@ -79,6 +79,44 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          pin: string
+          session_id: string
+          slug: string
+          view_count: number
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          pin: string
+          session_id: string
+          slug: string
+          view_count?: number
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          pin?: string
+          session_id?: string
+          slug?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_sessions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       summaries: {
         Row: {
           action_items: Json | null
