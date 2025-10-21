@@ -221,8 +221,8 @@ const Recorder = () => {
 
           setProgress(35);
 
-          // 40–85% Transcribe (Deepgram)
-          setProgressLabel('Transcribing (Deepgram)…');
+          // 40–85% Transcribe
+          setProgressLabel('Transcribing...');
           setProgress(45);
           
           const base64Audio = await convertBlobToBase64(audioBlob);
@@ -323,9 +323,6 @@ const Recorder = () => {
           )}
           {recState === 'idle' && (
             <div className="text-sm opacity-75">Tap anywhere to start</div>
-          )}
-          {recState === 'processing' && (
-            <div className="text-base opacity-90">Processing recording…</div>
           )}
         </div>
       </div>
