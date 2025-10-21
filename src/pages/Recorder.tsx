@@ -221,29 +221,75 @@ const Recorder = () => {
 
           setProgress(35);
 
-          // 40–85% Transcribe
+          // 40–85% Transcribe with simulated progress
           setProgressLabel('Transcribing...');
           setProgress(45);
           
+          // Start simulated progress during transcription
+          const progressInterval = setInterval(() => {
+            setProgress(prev => {
+              if (prev < 75) return prev + 1; // Slowly increment to 75%
+              return prev;
+            });
+          }, 800); // Increment every 800ms
+          
           const base64Audio = await convertBlobToBase64(audioBlob);
-          const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke(
-            'transcribe-deepgram',
-            {
-              body: {
-                base64Audio,
-                mimeType: mr.mimeType || 'audio/webm;codecs=opus',
-                sessionId,
-              },
-            }
-          );
-
-          setProgress(60);
-
-          if (transcriptError || !transcriptData?.success) {
-            throw new Error('Transcription failed');
+          
+          // Try Deepgram first
+          let transcript = '';
+          let transcriptData, transcriptError;
+          
+          try {
+            const deepgramResult = await supabase.functions.invoke(
+              'transcribe-deepgram',
+              {
+                body: {
+                  base64Audio,
+                  mimeType: mr.mimeType || 'audio/webm;codecs=opus',
+                  sessionId,
+                },
+              }
+            );
+            transcriptData = deepgramResult.data;
+            transcriptError = deepgramResult.error;
+          } catch (err) {
+            console.error('Deepgram error:', err);
+            transcriptError = err;
           }
 
-          const transcript = transcriptData.text;
+          // Fallback to Whisper if Deepgram fails
+          if (transcriptError || !transcriptData?.success) {
+            console.log('Deepgram failed, falling back to Whisper...');
+            setProgressLabel('Transcribing (Whisper fallback)...');
+            
+            try {
+              const whisperResult = await supabase.functions.invoke(
+                'transcribe-whisper',
+                {
+                  body: {
+                    base64Audio,
+                    mimeType: mr.mimeType || 'audio/webm;codecs=opus',
+                    sessionId,
+                  },
+                }
+              );
+              transcriptData = whisperResult.data;
+              transcriptError = whisperResult.error;
+            } catch (err) {
+              console.error('Whisper error:', err);
+              transcriptError = err;
+            }
+          }
+
+          // Stop progress simulation
+          clearInterval(progressInterval);
+          setProgress(75);
+
+          if (transcriptError || !transcriptData?.success) {
+            throw new Error('Both Deepgram and Whisper transcription failed');
+          }
+
+          transcript = transcriptData.text;
           setProgress(80);
 
           // 85–100% Analyze & tasks

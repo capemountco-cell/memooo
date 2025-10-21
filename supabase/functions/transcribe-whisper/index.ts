@@ -56,16 +56,33 @@ serve(async (req) => {
 
     const result = await response.json();
     const transcript = result.text || '';
-
-    if (!transcript) {
-      throw new Error('No transcript returned from Whisper');
+    
+    if (!transcript || transcript.trim().length === 0) {
+      console.log('No transcript returned from Whisper, audio may be too short or unclear');
+      // Return empty transcript instead of throwing error
+      return new Response(
+        JSON.stringify({ text: '', success: true, warning: 'No speech detected in audio' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Save to database
+    // Verify session exists before inserting
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const { data: sessionExists, error: sessionCheckError } = await supabase
+      .from('sessions')
+      .select('id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionCheckError || !sessionExists) {
+      console.error('Session not found:', sessionId);
+      throw new Error(`Session ${sessionId} not found in database`);
+    }
+
+    // Save to database
     const { error: insertError } = await supabase
       .from('transcripts')
       .insert({
