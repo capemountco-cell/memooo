@@ -176,6 +176,24 @@ const Recorder = () => {
   const handleDone = async () => {
     if (!sessionId || isProcessing) return;
 
+    // Don't save recordings with 0 duration
+    if (seconds === 0) {
+      toast.info('Recording too short', { duration: 1000 });
+      setRecState('processing');
+      try {
+        mediaRecorderRef.current?.stop();
+      } catch {}
+      cleanup();
+      if (sessionId) {
+        await supabase.from('sessions').delete().eq('id', sessionId);
+      }
+      setTimeout(() => {
+        setRecState('idle');
+        navigate('/');
+      }, 200);
+      return;
+    }
+
     setIsProcessing(true);
     const mr = mediaRecorderRef.current;
     if (!mr) {
