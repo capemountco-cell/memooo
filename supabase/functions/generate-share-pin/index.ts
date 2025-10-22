@@ -1,10 +1,37 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Hash PIN using PBKDF2 with Web Crypto API
+async function hashPin(pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(pin),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    256
+  );
+  const hashArray = new Uint8Array(derivedBits);
+  const combined = new Uint8Array(salt.length + hashArray.length);
+  combined.set(salt);
+  combined.set(hashArray, salt.length);
+  return btoa(String.fromCharCode(...combined));
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -50,8 +77,8 @@ Deno.serve(async (req) => {
     // Generate 6-digit PIN (zero-padded)
     const pin = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
 
-    // Hash PIN with bcrypt (strong alternative to argon2id)
-    const pinHash = await bcrypt.hash(pin);
+    // Hash PIN with PBKDF2
+    const pinHash = await hashPin(pin);
 
     // Generate share token (used for short-lived access)
     const shareToken = crypto.randomUUID();

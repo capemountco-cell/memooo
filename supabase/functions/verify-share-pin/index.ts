@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 import { create, getNumericDate } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
 
 const corsHeaders = {
@@ -8,6 +7,45 @@ const corsHeaders = {
 };
 
 const JWT_SECRET = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// Verify PIN using PBKDF2 with Web Crypto API
+async function verifyPin(pin: string, hash: string): Promise<boolean> {
+  try {
+    const combined = Uint8Array.from(atob(hash), c => c.charCodeAt(0));
+    const salt = combined.slice(0, 16);
+    const storedHash = combined.slice(16);
+    
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(pin),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt,
+        iterations: 100000,
+        hash: 'SHA-256',
+      },
+      keyMaterial,
+      256
+    );
+    const computedHash = new Uint8Array(derivedBits);
+    
+    // Constant-time comparison
+    if (storedHash.length !== computedHash.length) return false;
+    let result = 0;
+    for (let i = 0; i < storedHash.length; i++) {
+      result |= storedHash[i] ^ computedHash[i];
+    }
+    return result === 0;
+  } catch {
+    return false;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -120,8 +158,8 @@ Deno.serve(async (req) => {
       throw new Error('Session not found or sharing not enabled');
     }
 
-    // Verify PIN with bcrypt (constant-time comparison)
-    const isValid = await bcrypt.compare(normalizedPin, session.pin_hash);
+    // Verify PIN with PBKDF2 (constant-time comparison)
+    const isValid = await verifyPin(normalizedPin, session.pin_hash);
 
     if (!isValid) {
       // Log failed attempt
