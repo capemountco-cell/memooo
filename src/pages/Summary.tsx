@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { TemplateSelect } from '@/components/TemplateSelect';
 import { TaskItem } from '@/components/TaskItem';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShareModal } from '@/components/ShareModal';
+import { PinShareDialog } from '@/components/PinShareDialog';
 import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -773,7 +773,7 @@ const Summary = () => {
         <img src={fflogo} alt="Firefly" className="h-12" />
       </footer>
 
-      <ShareModal
+      <PinShareDialog
         open={shareModalOpen}
         onOpenChange={setShareModalOpen}
         sessionId={id!}

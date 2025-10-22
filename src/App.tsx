@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Recorder from "./pages/Recorder";
 import Summary from "./pages/Summary";
 import SharedSession from "./pages/SharedSession";
+import PinProtectedSession from "./pages/PinProtectedSession";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/recorder" element={<Recorder />} />
           <Route path="/summary/:id" element={<Summary />} />
+          <Route path="/s/:id" element={<PinProtectedSession />} />
           <Route path="/s/:slug" element={<SharedSession />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

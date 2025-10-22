@@ -43,6 +43,41 @@ export type Database = {
           },
         ]
       }
+      pin_attempts: {
+        Row: {
+          attempt_time: string
+          id: string
+          ip_address: string
+          locked_until: string | null
+          session_id: string
+          success: boolean
+        }
+        Insert: {
+          attempt_time?: string
+          id?: string
+          ip_address: string
+          locked_until?: string | null
+          session_id: string
+          success?: boolean
+        }
+        Update: {
+          attempt_time?: string
+          id?: string
+          ip_address?: string
+          locked_until?: string | null
+          session_id?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pin_attempts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           audio_url: string | null
@@ -51,6 +86,8 @@ export type Database = {
           ended_at: string | null
           id: string
           owner_user_id: string | null
+          pin_hash: string | null
+          share_token: string | null
           started_at: string
           status: string
           title: string | null
@@ -63,6 +100,8 @@ export type Database = {
           ended_at?: string | null
           id?: string
           owner_user_id?: string | null
+          pin_hash?: string | null
+          share_token?: string | null
           started_at?: string
           status?: string
           title?: string | null
@@ -75,6 +114,8 @@ export type Database = {
           ended_at?: string | null
           id?: string
           owner_user_id?: string | null
+          pin_hash?: string | null
+          share_token?: string | null
           started_at?: string
           status?: string
           title?: string | null
@@ -272,6 +313,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_pin_attempts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       verify_shared_session_pin: {
         Args: { p_pin: string; p_slug: string }
         Returns: {

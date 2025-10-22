@@ -1,1 +1,19 @@
 project_id = "rizvcdhpyndjwckoodlu"
+
+[functions.transcribe-deepgram]
+verify_jwt = true
+
+[functions.transcribe-whisper]
+verify_jwt = true
+
+[functions.analyze-insights]
+verify_jwt = true
+
+[functions.extract-tasks]
+verify_jwt = true
+
+[functions.generate-share-pin]
+verify_jwt = true
+
+[functions.verify-share-pin]
+verify_jwt = false
