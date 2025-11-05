@@ -221,24 +221,7 @@ const Summary = () => {
       setIsRefreshing(true);
       toast.info('Retrying transcription...', { duration: 2000 });
       
-      // Get signed URL for the audio file
-      const signedUrl = await getAudioSignedUrl(session.audio_url);
-      
-      // Fetch the audio file
-      const response = await fetch(signedUrl);
-      const audioBlob = await response.blob();
-      
-      // Convert to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      const base64Audio = await new Promise<string>((resolve) => {
-        reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          resolve(base64);
-        };
-      });
-      
-      // Try Deepgram first
+      // Try Deepgram first (pass storage path instead of base64)
       let transcriptData, transcriptError;
       
       try {
@@ -246,8 +229,7 @@ const Summary = () => {
           'transcribe-deepgram',
           {
             body: {
-              base64Audio,
-              mimeType: 'audio/webm;codecs=opus',
+              audioPath: session.audio_url,
               sessionId: id,
             },
           }
@@ -268,8 +250,7 @@ const Summary = () => {
             'transcribe-whisper',
             {
               body: {
-                base64Audio,
-                mimeType: 'audio/webm;codecs=opus',
+                audioPath: session.audio_url,
                 sessionId: id,
               },
             }
@@ -555,14 +536,33 @@ const Summary = () => {
                       <source src={audioSignedUrl} type="audio/webm" />
                       Your browser does not support the audio element.
                     </audio>
-                    <Button
-                      onClick={handleRetryTranscription}
-                      disabled={isRefreshing}
-                      className="w-full"
-                    >
-                      <RefreshCw size={16} className={isRefreshing ? 'animate-spin mr-2' : 'mr-2'} />
-                      Retry Transcription
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={handleRetryTranscription}
+                        disabled={isRefreshing}
+                        className="w-full"
+                      >
+                        <RefreshCw size={16} className={isRefreshing ? 'animate-spin mr-2' : 'mr-2'} />
+                        Retry Transcription
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (audioSignedUrl) {
+                            const a = document.createElement('a');
+                            a.href = audioSignedUrl;
+                            a.download = `${session?.title || 'recording'}.webm`;
+                            a.click();
+                            toast.success('Download started', { duration: 1000 });
+                          }
+                        }}
+                        disabled={!audioSignedUrl}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <Download size={16} className="mr-2" />
+                        Download Audio
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

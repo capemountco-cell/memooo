@@ -4,7 +4,7 @@ import { Timer } from '@/components/Timer';
 import { Waveform } from '@/components/Waveform';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { uploadAudioFile, convertBlobToBase64 } from '@/utils/audioUpload';
+import { uploadAudioFile } from '@/utils/audioUpload';
 import { toast } from 'sonner';
 import { RecState, bgFor } from '@/lib/recState';
 import ProgressBar from '@/components/ProgressBar';
@@ -260,9 +260,7 @@ const Recorder = () => {
             });
           }, 800); // Increment every 800ms
           
-          const base64Audio = await convertBlobToBase64(audioBlob);
-          
-          // Try Deepgram first
+          // Try Deepgram first (pass storage path instead of base64)
           let transcript = '';
           let transcriptData, transcriptError;
           
@@ -271,8 +269,7 @@ const Recorder = () => {
               'transcribe-deepgram',
               {
                 body: {
-                  base64Audio,
-                  mimeType: mr.mimeType || 'audio/webm;codecs=opus',
+                  audioPath: audioUrl,
                   sessionId,
                 },
               }
@@ -294,8 +291,7 @@ const Recorder = () => {
                 'transcribe-whisper',
                 {
                   body: {
-                    base64Audio,
-                    mimeType: mr.mimeType || 'audio/webm;codecs=opus',
+                    audioPath: audioUrl,
                     sessionId,
                   },
                 }

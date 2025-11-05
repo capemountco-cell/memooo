@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { base64Audio, mimeType, sessionId } = await req.json();
+    const { audioPath, sessionId } = await req.json();
     console.log('Transcribe request received for session:', sessionId);
 
-    if (!base64Audio || !sessionId) {
-      throw new Error('Missing required fields: base64Audio or sessionId');
+    if (!audioPath || !sessionId) {
+      throw new Error('Missing required fields: audioPath or sessionId');
     }
 
     const deepgramApiKey = Deno.env.get('DEEPGRAM_API_KEY');
@@ -24,25 +24,42 @@ serve(async (req) => {
       throw new Error('DEEPGRAM_API_KEY not configured');
     }
 
-    // Convert base64 to binary
-    const binaryString = atob(base64Audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    // Initialize Supabase client with service role to access storage
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get signed URL for the audio file (valid for 60 seconds)
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin
+      .storage
+      .from('audio')
+      .createSignedUrl(audioPath, 60);
+
+    if (signedUrlError || !signedUrlData) {
+      console.error('Error getting signed URL:', signedUrlError);
+      throw new Error('Failed to access audio file');
     }
 
+    console.log('Fetching audio from storage...');
+    // Fetch audio directly from storage
+    const audioResponse = await fetch(signedUrlData.signedUrl);
+    if (!audioResponse.ok) {
+      throw new Error('Failed to fetch audio from storage');
+    }
+
+    const audioBlob = await audioResponse.blob();
     console.log('Sending to Deepgram API...');
     
-    // Call Deepgram API
+    // Call Deepgram API with streaming
     const deepgramResponse = await fetch(
       'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true',
       {
         method: 'POST',
         headers: {
           'Authorization': `Token ${deepgramApiKey}`,
-          'Content-Type': mimeType || 'audio/webm',
+          'Content-Type': 'audio/webm',
         },
-        body: bytes,
+        body: audioBlob,
       }
     );
 
@@ -66,11 +83,9 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with user's JWT for RLS
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    // Use authenticated supabase client for database operations
     const authHeader = req.headers.get('Authorization') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     });
 

@@ -13,11 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { base64Audio, mimeType, sessionId } = await req.json();
+    const { audioPath, sessionId } = await req.json();
     console.log('Whisper transcribe request for session:', sessionId);
 
-    if (!base64Audio || !sessionId) {
-      throw new Error('Missing required fields');
+    if (!audioPath || !sessionId) {
+      throw new Error('Missing required fields: audioPath or sessionId');
     }
 
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -25,17 +25,34 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY not configured');
     }
 
-    // Convert base64 to binary
-    const binaryString = atob(base64Audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+    // Initialize Supabase client with service role to access storage
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get signed URL for the audio file (valid for 60 seconds)
+    const { data: signedUrlData, error: signedUrlError } = await supabaseAdmin
+      .storage
+      .from('audio')
+      .createSignedUrl(audioPath, 60);
+
+    if (signedUrlError || !signedUrlData) {
+      console.error('Error getting signed URL:', signedUrlError);
+      throw new Error('Failed to access audio file');
     }
+
+    console.log('Fetching audio from storage...');
+    // Fetch audio directly from storage
+    const audioResponse = await fetch(signedUrlData.signedUrl);
+    if (!audioResponse.ok) {
+      throw new Error('Failed to fetch audio from storage');
+    }
+
+    const audioBlob = await audioResponse.blob();
 
     // Create form data
     const formData = new FormData();
-    const blob = new Blob([bytes], { type: mimeType || 'audio/webm' });
-    formData.append('file', blob, 'audio.webm');
+    formData.append('file', audioBlob, 'audio.webm');
     formData.append('model', 'whisper-1');
 
     console.log('Sending to OpenAI Whisper...');
@@ -66,11 +83,9 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with user's JWT for RLS
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    // Use authenticated supabase client for database operations
     const authHeader = req.headers.get('Authorization') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     });
 
