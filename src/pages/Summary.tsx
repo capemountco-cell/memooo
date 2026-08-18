@@ -17,6 +17,7 @@ import evolveLogoDark from '@/assets/evolve-logo-dark.svg';
 import evolveLogoWhite from '@/assets/evolve-logo-white.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
+import { stripMarkdown, stripMarkdownInline } from '@/utils/markdown';
 
 
 interface Session {
@@ -526,7 +527,7 @@ const Summary = () => {
                   <CardTitle>Overview</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">{summary.overview}</p>
+                  <p className="text-sm text-muted-foreground">{stripMarkdown(summary.overview)}</p>
                 </CardContent>
               </Card>
             ) : null}
@@ -540,7 +541,7 @@ const Summary = () => {
                   {tasks
                     .filter(t => t.status === 'open' && t.source === 'ai')
                     .map(task => (
-                      <div key={task.id} className="text-sm">• {task.title}</div>
+                      <div key={task.id} className="text-sm">• {stripMarkdownInline(task.title)}</div>
                     ))}
                 </CardContent>
               </Card>
@@ -554,7 +555,7 @@ const Summary = () => {
                 <CardContent>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     {summary.key_topics.map((topic, i) => (
-                      <li key={i}>• {topic}</li>
+                      <li key={i}>• {stripMarkdownInline(topic)}</li>
                     ))}
                   </ul>
                 </CardContent>
@@ -569,7 +570,7 @@ const Summary = () => {
                 <CardContent>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     {summary.decisions.map((decision, i) => (
-                      <li key={i}>• {decision}</li>
+                      <li key={i}>• {stripMarkdownInline(decision)}</li>
                     ))}
                   </ul>
                 </CardContent>
@@ -584,7 +585,7 @@ const Summary = () => {
                 <CardContent>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     {summary.questions.map((question, i) => (
-                      <li key={i}>• {question}</li>
+                      <li key={i}>• {stripMarkdownInline(question)}</li>
                     ))}
                   </ul>
                 </CardContent>
@@ -599,7 +600,7 @@ const Summary = () => {
                 <CardContent>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     {summary.dates.map((date: any, i) => (
-                      <li key={i}>• {date.date}: {date.context}</li>
+                      <li key={i}>• {stripMarkdownInline(date.date)}: {stripMarkdownInline(date.context)}</li>
                     ))}
                   </ul>
                 </CardContent>
@@ -615,7 +616,7 @@ const Summary = () => {
                   <div className="flex flex-wrap gap-2">
                     {summary.participants.map((participant, i) => (
                       <span key={i} className="px-3 py-1 bg-muted rounded-full text-sm">
-                        {participant}
+                        {stripMarkdownInline(participant)}
                       </span>
                     ))}
                   </div>

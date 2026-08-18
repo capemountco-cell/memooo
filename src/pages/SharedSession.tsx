@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import evolveLogo from '@/assets/evolve-logo-dark.svg';
+import { stripMarkdown, stripMarkdownInline } from '@/utils/markdown';
 
 export default function SharedSession() {
   const { slug } = useParams<{ slug: string }>();
@@ -129,7 +130,7 @@ export default function SharedSession() {
               <CardTitle>Overview</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{summary.overview}</p>
+              <p className="text-sm text-muted-foreground">{stripMarkdown(summary.overview)}</p>
             </CardContent>
           </Card>
         )}
@@ -141,7 +142,7 @@ export default function SharedSession() {
             </CardHeader>
             <CardContent className="space-y-2">
               {tasks.map((task: any) => (
-                <div key={task.id} className="text-sm">• {task.title}</div>
+                <div key={task.id} className="text-sm">• {stripMarkdownInline(task.title)}</div>
               ))}
             </CardContent>
           </Card>
@@ -155,7 +156,7 @@ export default function SharedSession() {
             <CardContent>
               <ul className="text-sm text-muted-foreground space-y-1">
                 {summary.key_topics.map((topic: string, i: number) => (
-                  <li key={i}>• {topic}</li>
+                  <li key={i}>• {stripMarkdownInline(topic)}</li>
                 ))}
               </ul>
             </CardContent>
@@ -170,7 +171,7 @@ export default function SharedSession() {
             <CardContent>
               <div className="prose prose-sm max-w-none text-muted-foreground">
                 <div className="whitespace-pre-wrap leading-relaxed">
-                  {transcript}
+                  {stripMarkdown(transcript)}
                 </div>
               </div>
             </CardContent>

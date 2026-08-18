@@ -4,6 +4,8 @@
  * so a given speaker keeps the same highlight colour everywhere.
  */
 
+import { stripMarkdown } from './markdown';
+
 export interface SpeakerTurn {
   speaker: string | null;
   text: string;
@@ -23,7 +25,7 @@ export const SPEAKER_PALETTE: Array<{ hex: string; rgb: [number, number, number]
   { hex: '#DCE0F2', rgb: [0xdc, 0xe0, 0xf2] }, // periwinkle mist
 ];
 
-const SPEAKER_RE = /^\s*\**\s*([A-Za-z][A-Za-z0-9 .'\-_]{0,38}?)\s*\**\s*:\s*(?!\/\/)([\s\S]*)$/;
+const SPEAKER_RE = /^\s*\**\s*([A-Za-z][A-Za-z0-9 .'\-_]{0,38}?)\s*\**\s*:\s*\**\s*(?!\/\/)([\s\S]*)$/;
 
 const looksLikeSpeaker = (name: string) => {
   const words = name.trim().split(/\s+/);
@@ -56,8 +58,8 @@ export const parseSpeakerTurns = (raw: string): SpeakerTurn[] => {
   blocks.forEach((block) => {
     const m = block.match(SPEAKER_RE);
     if (m && looksLikeSpeaker(m[1])) {
-      const speaker = m[1].trim();
-      const body = m[2].trim();
+      const speaker = stripMarkdown(m[1]).trim();
+      const body = stripMarkdown(m[2]).trim();
       const last = turns[turns.length - 1];
       if (last && last.speaker === speaker) {
         last.text = `${last.text}\n\n${body}`.trim();
@@ -65,7 +67,7 @@ export const parseSpeakerTurns = (raw: string): SpeakerTurn[] => {
         turns.push({ speaker, text: body });
       }
     } else {
-      turns.push({ speaker: null, text: block });
+      turns.push({ speaker: null, text: stripMarkdown(block).trim() });
     }
   });
 

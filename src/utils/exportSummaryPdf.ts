@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import evolveLogo from '@/assets/evolve-logo-grey.svg';
+import { stripMarkdownInline } from './markdown';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
 
 
@@ -77,7 +78,7 @@ const formatDate = (iso?: string | null) => {
 };
 
 const clean = (v: unknown): string =>
-  typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '';
+  typeof v === 'string' ? stripMarkdownInline(v) : '';
 
 const listOf = (v?: unknown): string[] => {
   if (!Array.isArray(v)) return [];
