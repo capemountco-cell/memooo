@@ -12,10 +12,9 @@ import { PinShareDialog } from '@/components/PinShareDialog';
 import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import memoLogo from '@/assets/memo-logo.svg';
-import memoLogoWhite from '@/assets/memo-logo-white.svg';
-import { getLogoPngDataUrl, LOGO_ASPECT_RATIO } from '@/utils/logoImage';
+import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
+import evolveLogoDark from '@/assets/evolve-logo-dark.svg';
+import evolveLogoWhite from '@/assets/evolve-logo-white.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 
 interface Session {
@@ -381,110 +380,7 @@ const Summary = () => {
 
   const handleExportPDF = async () => {
     try {
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 20;
-      let yPos = 20;
-
-      // Add logo
-      const logoWidth = 45;
-      const logoHeight = logoWidth / LOGO_ASPECT_RATIO;
-      try {
-        const logo = await getLogoPngDataUrl();
-        pdf.addImage(logo, 'PNG', (pageWidth - logoWidth) / 2, yPos, logoWidth, logoHeight);
-        yPos += logoHeight + 10;
-      } catch (logoError) {
-        console.error('Error adding logo to PDF:', logoError);
-        pdf.setFontSize(20);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Memo', pageWidth / 2, yPos, { align: 'center' });
-        yPos += 15;
-      }
-
-      // Add title
-      pdf.setFontSize(16);
-      pdf.text(session?.title || 'Recording', margin, yPos);
-      yPos += 10;
-
-      // Add overview
-      if (summary?.overview) {
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Overview', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        const overviewLines = pdf.splitTextToSize(summary.overview, pageWidth - 2 * margin);
-        pdf.text(overviewLines, margin, yPos);
-        yPos += overviewLines.length * 5 + 5;
-      }
-
-      // Add key topics
-      if (summary?.key_topics && summary.key_topics.length > 0) {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Key Topics', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        summary.key_topics.forEach((topic: string) => {
-          const topicLines = pdf.splitTextToSize(`• ${topic}`, pageWidth - 2 * margin);
-          pdf.text(topicLines, margin, yPos);
-          yPos += topicLines.length * 5;
-        });
-        yPos += 5;
-      }
-
-      // Add action items
-      const openTasks = tasks.filter(t => t.status === 'open');
-      if (openTasks.length > 0) {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Action Items', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        openTasks.forEach((task) => {
-          const taskText = `• ${task.title}${task.owner ? ` (@${task.owner})` : ''}`;
-          const taskLines = pdf.splitTextToSize(taskText, pageWidth - 2 * margin);
-          pdf.text(taskLines, margin, yPos);
-          yPos += taskLines.length * 5;
-        });
-        yPos += 5;
-      }
-
-      // Add transcript
-      if (transcript) {
-        if (yPos > 200) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Transcript', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'normal');
-        const transcriptLines = pdf.splitTextToSize(transcript, pageWidth - 2 * margin);
-        transcriptLines.forEach((line: string) => {
-          if (yPos > 280) {
-            pdf.addPage();
-            yPos = 20;
-          }
-          pdf.text(line, margin, yPos);
-          yPos += 4;
-        });
-      }
-
-      pdf.save(`${session?.title || 'recording'}.pdf`);
+      await exportSummaryPdf({ session, summary, tasks, transcript });
       toast.success('PDF exported', { duration: 1000 });
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -492,13 +388,14 @@ const Summary = () => {
     }
   };
 
+
   if (isLoading) {
     return (
       <div 
         className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-500"
         style={{ minHeight: '100svh' }}
       >
-        <img src={memoLogoWhite} alt="Memo" className="w-24 h-auto mb-12" />
+        <img src={evolveLogoWhite} alt="Memo" className="w-24 h-auto mb-12" />
         <div className="w-full max-w-2xl px-4">
           <ProgressBar value={loadingProgress} label={loadingLabel} />
         </div>
@@ -781,7 +678,7 @@ const Summary = () => {
       </div>
 
       <footer className="w-full flex justify-center py-6 opacity-80">
-        <img src={memoLogo} alt="Memo" className="w-20 h-auto" />
+        <img src={evolveLogoDark} alt="Memo" className="w-20 h-auto" />
       </footer>
 
       <PinShareDialog
