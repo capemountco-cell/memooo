@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import evolveLogo from '@/assets/evolve-logo-dark.svg';
 import { stripMarkdown, stripMarkdownInline } from '@/utils/markdown';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { THEME_COLORS } from '@/lib/themeColors';
 
 export default function SharedSession() {
   const { slug } = useParams<{ slug: string }>();
@@ -15,6 +17,8 @@ export default function SharedSession() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [sessionData, setSessionData] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useThemeColor(THEME_COLORS.surface);
 
   const verifyPin = async () => {
     if (!slug || !pin) return;

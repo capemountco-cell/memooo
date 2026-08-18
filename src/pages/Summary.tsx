@@ -18,6 +18,8 @@ import evolveLogoWhite from '@/assets/evolve-logo-white.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
 import { stripMarkdown, stripMarkdownInline } from '@/utils/markdown';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { THEME_COLORS } from '@/lib/themeColors';
 
 
 interface Session {
@@ -95,6 +97,8 @@ const Summary = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingLabel, setLoadingLabel] = useState('Loading session...');
   const [isLoading, setIsLoading] = useState(true);
+
+  useThemeColor(isLoading ? THEME_COLORS.black : THEME_COLORS.surface);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [audioSignedUrl, setAudioSignedUrl] = useState<string | null>(null);
 
@@ -429,7 +433,10 @@ const Summary = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background flex flex-col"
+      style={{ minHeight: '100svh' }}
+    >
       <header className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button
@@ -696,7 +703,10 @@ const Summary = () => {
         </div>
       </div>
 
-      <footer className="w-full flex justify-center py-6 opacity-80">
+      <footer
+        className="mt-auto w-full flex justify-center py-6 opacity-50"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         <img src={evolveLogoDark} alt="Memo" className="w-20 h-auto" />
       </footer>
 
