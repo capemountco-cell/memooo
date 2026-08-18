@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -313,10 +313,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_old_pin_attempts: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_pin_attempts: { Args: never; Returns: undefined }
       verify_shared_session_pin: {
         Args: { p_pin: string; p_slug: string }
         Returns: {
