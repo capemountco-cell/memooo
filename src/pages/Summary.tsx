@@ -12,7 +12,7 @@ import { PinShareDialog } from '@/components/PinShareDialog';
 import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
 import fflogo from '@/assets/fflogo.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 
