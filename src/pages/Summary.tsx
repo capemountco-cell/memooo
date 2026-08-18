@@ -12,7 +12,7 @@ import { PinShareDialog } from '@/components/PinShareDialog';
 import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
+import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
 import fflogo from '@/assets/fflogo.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 
@@ -379,107 +379,14 @@ const Summary = () => {
 
   const handleExportPDF = async () => {
     try {
-      const pdf = new jsPDF();
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 20;
-      let yPos = 20;
-
-      // Add logo
-      pdf.setFontSize(20);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Firefly', pageWidth / 2, yPos, { align: 'center' });
-      yPos += 15;
-
-      // Add title
-      pdf.setFontSize(16);
-      pdf.text(session?.title || 'Recording', margin, yPos);
-      yPos += 10;
-
-      // Add overview
-      if (summary?.overview) {
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Overview', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        const overviewLines = pdf.splitTextToSize(summary.overview, pageWidth - 2 * margin);
-        pdf.text(overviewLines, margin, yPos);
-        yPos += overviewLines.length * 5 + 5;
-      }
-
-      // Add key topics
-      if (summary?.key_topics && summary.key_topics.length > 0) {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Key Topics', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        summary.key_topics.forEach((topic: string) => {
-          const topicLines = pdf.splitTextToSize(`• ${topic}`, pageWidth - 2 * margin);
-          pdf.text(topicLines, margin, yPos);
-          yPos += topicLines.length * 5;
-        });
-        yPos += 5;
-      }
-
-      // Add action items
-      const openTasks = tasks.filter(t => t.status === 'open');
-      if (openTasks.length > 0) {
-        if (yPos > 250) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Action Items', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        openTasks.forEach((task) => {
-          const taskText = `• ${task.title}${task.owner ? ` (@${task.owner})` : ''}`;
-          const taskLines = pdf.splitTextToSize(taskText, pageWidth - 2 * margin);
-          pdf.text(taskLines, margin, yPos);
-          yPos += taskLines.length * 5;
-        });
-        yPos += 5;
-      }
-
-      // Add transcript
-      if (transcript) {
-        if (yPos > 200) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Transcript', margin, yPos);
-        yPos += 7;
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'normal');
-        const transcriptLines = pdf.splitTextToSize(transcript, pageWidth - 2 * margin);
-        transcriptLines.forEach((line: string) => {
-          if (yPos > 280) {
-            pdf.addPage();
-            yPos = 20;
-          }
-          pdf.text(line, margin, yPos);
-          yPos += 4;
-        });
-      }
-
-      pdf.save(`${session?.title || 'recording'}.pdf`);
+      await exportSummaryPdf({ session, summary, tasks, transcript });
       toast.success('PDF exported', { duration: 1000 });
     } catch (error) {
       console.error('Error exporting PDF:', error);
       toast.error('Failed to export PDF', { duration: 1000 });
     }
   };
+
 
   if (isLoading) {
     return (
