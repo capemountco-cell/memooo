@@ -118,7 +118,7 @@ const Index = () => {
       style={{ minHeight: '100svh' }}
     >
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-2xl opacity-0 translate-y-2 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : ''}`}>
-        <img src={memoLogo} alt="Memo" className="w-72 max-w-[80%] h-auto mb-12" />
+        <img src={memoLogo} alt="Memo" className="w-24 h-auto mb-12" />
         <div onClick={handleStartRecording} className="cursor-pointer">
           <RecordButton isRecording={hasActiveRecording} onClick={handleStartRecording} />
         </div>

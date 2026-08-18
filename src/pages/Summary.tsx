@@ -498,7 +498,7 @@ const Summary = () => {
         className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-500"
         style={{ minHeight: '100svh' }}
       >
-        <img src={memoLogoWhite} alt="Memo" className="w-72 max-w-[80%] h-auto mb-12" />
+        <img src={memoLogoWhite} alt="Memo" className="w-24 h-auto mb-12" />
         <div className="w-full max-w-2xl px-4">
           <ProgressBar value={loadingProgress} label={loadingLabel} />
         </div>
@@ -781,7 +781,7 @@ const Summary = () => {
       </div>
 
       <footer className="w-full flex justify-center py-6 opacity-80">
-        <img src={memoLogo} alt="Memo" className="w-40 max-w-[60%] h-auto" />
+        <img src={memoLogo} alt="Memo" className="w-20 h-auto" />
       </footer>
 
       <PinShareDialog

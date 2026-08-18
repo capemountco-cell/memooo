@@ -73,7 +73,7 @@ export default function SharedSession() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <img src={memoLogo} alt="Memo" className="w-40 max-w-[70%] h-auto mx-auto mb-4 opacity-90" />
+            <img src={memoLogo} alt="Memo" className="w-24 h-auto mx-auto mb-4 opacity-90" />
             <CardTitle>Enter PIN to Access Recording</CardTitle>
           </CardHeader>
           <CardContent>
@@ -105,7 +105,7 @@ export default function SharedSession() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <img src={memoLogo} alt="Memo" className="w-44 max-w-[70%] h-auto mx-auto mb-4 opacity-90" />
+          <img src={memoLogo} alt="Memo" className="w-24 h-auto mx-auto mb-4 opacity-90" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function SharedSession() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-background border-b px-4 py-3">
-        <img src={memoLogo} alt="Memo" className="w-28 h-auto opacity-90" />
+        <img src={memoLogo} alt="Memo" className="w-20 h-auto opacity-90" />
       </header>
 
       <div className="p-4 space-y-4 max-w-4xl mx-auto">
