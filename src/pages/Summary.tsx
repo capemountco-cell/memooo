@@ -166,7 +166,7 @@ const Summary = () => {
         .order('created_at', { ascending: true });
 
       if (transcriptData) {
-        setTranscript(transcriptData.map(t => t.text).join(' '));
+        setTranscript(transcriptData.map(t => t.text).join('\n\n'));
       }
       setLoadingProgress(100);
       
