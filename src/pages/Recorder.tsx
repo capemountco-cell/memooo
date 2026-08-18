@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadAudioFile } from '@/utils/audioUpload';
 import { toast } from 'sonner';
-import { RecState, bgFor } from '@/lib/recState';
+import { RecState, bgFor, themeColorFor } from '@/lib/recState';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import ProgressBar from '@/components/ProgressBar';
 
 const Recorder = () => {
@@ -18,6 +19,8 @@ const Recorder = () => {
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState('Preparing…');
   
+  useThemeColor(themeColorFor(recState));
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);

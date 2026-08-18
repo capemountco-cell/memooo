@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { stripMarkdownInline } from '@/utils/markdown';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Trash2, Star } from 'lucide-react';
@@ -67,12 +68,12 @@ export const TaskItem = ({ task, onUpdate, onDelete }: TaskItemProps) => {
             onClick={() => setIsEditing(true)}
             className="text-left w-full text-sm font-medium hover:text-primary transition-colors"
           >
-            {task.title}
+            {stripMarkdownInline(task.title)}
           </button>
         )}
         {(task.owner || task.due_at) && (
           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-            {task.owner && <span>{task.owner}</span>}
+            {task.owner && <span>{stripMarkdownInline(task.owner)}</span>}
             {task.due_at && <span>{format(new Date(task.due_at), 'MMM d')}</span>}
           </div>
         )}

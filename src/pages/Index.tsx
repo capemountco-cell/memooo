@@ -5,6 +5,8 @@ import { SessionCard } from '@/components/SessionCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import evolveLogo from '@/assets/evolve-logo-white.svg';
+import { useThemeColor } from '@/hooks/useThemeColor';
+import { THEME_COLORS } from '@/lib/themeColors';
 
 interface Session {
   id: string;
@@ -19,6 +21,8 @@ const Index = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [hasActiveRecording, setHasActiveRecording] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  useThemeColor(hasActiveRecording ? THEME_COLORS.recording : THEME_COLORS.black);
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
