@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
 import fflogo from '@/assets/fflogo.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
+import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
+
 
 interface Session {
   id: string;
