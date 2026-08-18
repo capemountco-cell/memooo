@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
 import fflogo from '@/assets/fflogo.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
+import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
+
 
 interface Session {
   id: string;
@@ -46,14 +48,36 @@ interface Task {
   source: string;
 }
 
-const formatTranscript = (raw: string) => {
-  return raw.split(/\n{2,}/).map((block) => {
-    const [first, ...rest] = block.split('\n');
-    const cleaned = first.replace(/^\*{1,3}|\*{1,3}$/g, '');
-    const isHeading = cleaned.length <= 120 && (/:$/.test(cleaned) || /^[A-Z].{0,}$/.test(cleaned));
-    return { heading: isHeading ? cleaned : null, body: isHeading ? rest.join('\n') : block };
-  });
+const TranscriptView = ({ raw }: { raw: string }) => {
+  const turns = parseSpeakerTurns(raw);
+  const colorMap = buildSpeakerColorMap(turns);
+
+  return (
+    <div className="space-y-5">
+      {turns.map((turn, i) => (
+        <div key={i} className="space-y-1.5">
+          {turn.speaker && (
+            <span
+              className="inline-block rounded-[4px] px-1.5 py-0.5 text-[13px] font-bold tracking-tight text-foreground"
+              style={{
+                backgroundColor:
+                  SPEAKER_PALETTE[colorMap.get(turn.speaker) ?? 0].hex,
+              }}
+            >
+              {turn.speaker}
+            </span>
+          )}
+          {turn.text && (
+            <p className="text-[15px] leading-7 text-foreground/90 whitespace-pre-wrap">
+              {turn.text}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 };
+
 
 const Summary = () => {
   const { id } = useParams<{ id: string }>();
@@ -142,7 +166,7 @@ const Summary = () => {
         .order('created_at', { ascending: true });
 
       if (transcriptData) {
-        setTranscript(transcriptData.map(t => t.text).join(' '));
+        setTranscript(transcriptData.map(t => t.text).join('\n\n'));
       }
       setLoadingProgress(100);
       
@@ -650,14 +674,8 @@ const Summary = () => {
                     <Skeleton className="h-4 w-4/5" />
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {formatTranscript(transcript).map((block, i) => (
-                      <div key={i} className="mb-4">
-                        {block.heading && <p className="font-semibold text-[15px] mb-1">{block.heading}</p>}
-                        {block.body && <p className="text-[15px] leading-6 text-muted-foreground whitespace-pre-wrap">{block.body}</p>}
-                      </div>
-                    ))}
-                  </div>
+                  <TranscriptView raw={transcript} />
+
                 )}
               </CardContent>
             </Card>

@@ -50,9 +50,9 @@ serve(async (req) => {
     const audioBlob = await audioResponse.blob();
     console.log('Sending to Deepgram API...');
     
-    // Call Deepgram API with streaming
+    // Call Deepgram API with streaming (diarization + utterances for speaker turns)
     const deepgramResponse = await fetch(
-      'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true',
+      'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true&utterances=true&punctuate=true',
       {
         method: 'POST',
         headers: {
@@ -72,7 +72,54 @@ serve(async (req) => {
     const result = await deepgramResponse.json();
     console.log('Deepgram response received');
 
-    const transcript = result.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+    const alternative = result.results?.channels?.[0]?.alternatives?.[0];
+    const flatTranscript: string = alternative?.transcript || '';
+
+    // Group consecutive content by speaker into "Speaker N: ..." blocks
+    const speakerLabel = (n: unknown) =>
+      typeof n === 'number' && Number.isFinite(n) ? `Speaker ${n + 1}` : null;
+
+    const buildFromUtterances = (): string | null => {
+      const utterances = result.results?.utterances ?? result.utterances;
+      if (!Array.isArray(utterances) || utterances.length === 0) return null;
+      const groups: Array<{ speaker: string | null; parts: string[] }> = [];
+      for (const u of utterances) {
+        const text = String(u?.transcript ?? '').trim();
+        if (!text) continue;
+        const label = speakerLabel(u?.speaker);
+        const last = groups[groups.length - 1];
+        if (last && last.speaker === label) last.parts.push(text);
+        else groups.push({ speaker: label, parts: [text] });
+      }
+      if (groups.length === 0) return null;
+      if (groups.every((g) => g.speaker === null)) return null;
+      return groups
+        .map((g) => (g.speaker ? `${g.speaker}: ${g.parts.join(' ')}` : g.parts.join(' ')))
+        .join('\n\n');
+    };
+
+    const buildFromWords = (): string | null => {
+      const words = alternative?.words;
+      if (!Array.isArray(words) || words.length === 0) return null;
+      if (!words.some((w: any) => typeof w?.speaker === 'number')) return null;
+      const groups: Array<{ speaker: string | null; parts: string[] }> = [];
+      for (const w of words) {
+        const token = String(w?.punctuated_word ?? w?.word ?? '').trim();
+        if (!token) continue;
+        const label = speakerLabel(w?.speaker);
+        const last = groups[groups.length - 1];
+        if (last && last.speaker === label) last.parts.push(token);
+        else groups.push({ speaker: label, parts: [token] });
+      }
+      if (groups.length === 0) return null;
+      return groups
+        .map((g) => (g.speaker ? `${g.speaker}: ${g.parts.join(' ')}` : g.parts.join(' ')))
+        .join('\n\n');
+    };
+
+    const transcript = buildFromUtterances() || buildFromWords() || flatTranscript;
+    console.log('Diarized transcript built:', transcript ? transcript.slice(0, 80) : '(empty)');
+
     
     if (!transcript || transcript.trim().length === 0) {
       console.log('No transcript returned from Deepgram, audio may be too short or unclear');

@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf';
 import evolveLogo from '@/assets/evolve-logo-grey.svg';
+import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
+
 
 /* ------------------------------------------------------------------ *
  * Editorial meeting-notes PDF export (US Letter, points)
@@ -483,17 +485,45 @@ export const exportSummaryPdf = async ({
     rule(ctx);
     ctx.y += 22;
 
-    transcriptText
-      .split(/\n{2,}/)
-      .map((p) => p.replace(/\s+\n/g, '\n').trim())
-      .filter(Boolean)
-      .forEach((para) => {
+    const turns = parseSpeakerTurns(transcriptText);
+    const colorMap = buildSpeakerColorMap(turns);
+
+    turns.forEach((turn) => {
+      const size = 12.6;
+      const lh = size * 1.46;
+      const paras = turn.text
+        .split(/\n{2,}/)
+        .map((p) => p.replace(/\s+\n/g, '\n').trim())
+        .filter(Boolean);
+
+      if (turn.speaker) {
+        const chipH = 15;
+        const firstLine = paras[0] ?? '';
+        // keep the speaker chip with at least the first line of dialogue
+        ensure(ctx, chipH + (firstLine ? lh : 0) + 6, 'Meeting Notes / Transcript');
+
+        pdf.setFont(SANS, 'bold');
+        pdf.setFontSize(9.4);
+        const labelW = pdf.getTextWidth(turn.speaker);
+        const padX = 5;
+        const chipY = ctx.y + 2;
+        const swatch = SPEAKER_PALETTE[colorMap.get(turn.speaker) ?? 0].rgb;
+        pdf.setFillColor(swatch[0], swatch[1], swatch[2]);
+        pdf.roundedRect(MARGIN_X, chipY, labelW + padX * 2, chipH, 3, 3, 'F');
+        setFill(pdf, INK);
+        pdf.text(turn.speaker, MARGIN_X + padX, chipY + chipH - 4.6);
+        ctx.y = chipY + chipH + 5;
+      }
+
+      paras.forEach((para, i) => {
         wrappedText(ctx, para, {
-          size: 12.6,
+          size,
           lineHeight: 1.46,
-          gapAfter: 12,
+          gapAfter: i === paras.length - 1 ? (turn.speaker ? 15 : 12) : 8,
         });
       });
+    });
+
   }
 
   drawFooter(ctx);
