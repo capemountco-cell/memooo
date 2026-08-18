@@ -13,7 +13,8 @@ import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
-import fflogo from '@/assets/fflogo.svg';
+import evolveLogoDark from '@/assets/evolve-logo-dark.svg';
+import evolveLogoWhite from '@/assets/evolve-logo-white.svg';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
 
@@ -418,7 +419,7 @@ const Summary = () => {
         className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-500"
         style={{ minHeight: '100svh' }}
       >
-        <img src={fflogo} alt="Firefly" className="h-20 mb-12 brightness-0 invert" />
+        <img src={evolveLogoWhite} alt="Memo" className="w-24 h-auto mb-12" />
         <div className="w-full max-w-2xl px-4">
           <ProgressBar value={loadingProgress} label={loadingLabel} />
         </div>
@@ -695,7 +696,7 @@ const Summary = () => {
       </div>
 
       <footer className="w-full flex justify-center py-6 opacity-80">
-        <img src={fflogo} alt="Firefly" className="h-12" />
+        <img src={evolveLogoDark} alt="Memo" className="w-20 h-auto" />
       </footer>
 
       <PinShareDialog
