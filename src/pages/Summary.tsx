@@ -672,14 +672,8 @@ const Summary = () => {
                     <Skeleton className="h-4 w-4/5" />
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {formatTranscript(transcript).map((block, i) => (
-                      <div key={i} className="mb-4">
-                        {block.heading && <p className="font-semibold text-[15px] mb-1">{block.heading}</p>}
-                        {block.body && <p className="text-[15px] leading-6 text-muted-foreground whitespace-pre-wrap">{block.body}</p>}
-                      </div>
-                    ))}
-                  </div>
+                  <TranscriptView raw={transcript} />
+
                 )}
               </CardContent>
             </Card>
