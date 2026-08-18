@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf';
 import evolveLogo from '@/assets/evolve-logo-grey.svg';
+import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
+
 
 /* ------------------------------------------------------------------ *
  * Editorial meeting-notes PDF export (US Letter, points)
