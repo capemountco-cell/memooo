@@ -13,7 +13,9 @@ import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
-import fflogo from '@/assets/fflogo.svg';
+import memoLogo from '@/assets/memo-logo.svg';
+import memoLogoWhite from '@/assets/memo-logo-white.svg';
+import { getLogoPngDataUrl, LOGO_ASPECT_RATIO } from '@/utils/logoImage';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 
 interface Session {
@@ -385,10 +387,19 @@ const Summary = () => {
       let yPos = 20;
 
       // Add logo
-      pdf.setFontSize(20);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Firefly', pageWidth / 2, yPos, { align: 'center' });
-      yPos += 15;
+      const logoWidth = 45;
+      const logoHeight = logoWidth / LOGO_ASPECT_RATIO;
+      try {
+        const logo = await getLogoPngDataUrl();
+        pdf.addImage(logo, 'PNG', (pageWidth - logoWidth) / 2, yPos, logoWidth, logoHeight);
+        yPos += logoHeight + 10;
+      } catch (logoError) {
+        console.error('Error adding logo to PDF:', logoError);
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Memo', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+      }
 
       // Add title
       pdf.setFontSize(16);
@@ -487,7 +498,7 @@ const Summary = () => {
         className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-500"
         style={{ minHeight: '100svh' }}
       >
-        <img src={fflogo} alt="Firefly" className="h-20 mb-12 brightness-0 invert" />
+        <img src={memoLogoWhite} alt="Memo" className="w-72 max-w-[80%] h-auto mb-12" />
         <div className="w-full max-w-2xl px-4">
           <ProgressBar value={loadingProgress} label={loadingLabel} />
         </div>
@@ -770,7 +781,7 @@ const Summary = () => {
       </div>
 
       <footer className="w-full flex justify-center py-6 opacity-80">
-        <img src={fflogo} alt="Firefly" className="h-12" />
+        <img src={memoLogo} alt="Memo" className="w-40 max-w-[60%] h-auto" />
       </footer>
 
       <PinShareDialog

@@ -1,4 +1,6 @@
-# Welcome to your Lovable project
+# Memo
+
+Voice transcribing & meeting insights.
 
 ## Project info
 

@@ -4,7 +4,7 @@ import { RecordButton } from '@/components/RecordButton';
 import { SessionCard } from '@/components/SessionCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import fflogo from '@/assets/fflogo.svg';
+import memoLogo from '@/assets/memo-logo-white.svg';
 
 interface Session {
   id: string;
@@ -118,7 +118,7 @@ const Index = () => {
       style={{ minHeight: '100svh' }}
     >
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-2xl opacity-0 translate-y-2 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : ''}`}>
-        <img src={fflogo} alt="Firefly" className="h-20 mb-12 brightness-0 invert" />
+        <img src={memoLogo} alt="Memo" className="w-72 max-w-[80%] h-auto mb-12" />
         <div onClick={handleStartRecording} className="cursor-pointer">
           <RecordButton isRecording={hasActiveRecording} onClick={handleStartRecording} />
         </div>
