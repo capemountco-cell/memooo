@@ -323,7 +323,6 @@ export const exportSummaryPdf = async ({
 }: ExportPdfInput) => {
   const title = clean(session?.title || '') || 'Recording';
   const dateLabel = formatDate(session?.started_at);
-  const logo = await loadLogoPng();
 
   const pdf = new jsPDF({ unit: 'pt', format: 'letter', orientation: 'portrait' });
 
