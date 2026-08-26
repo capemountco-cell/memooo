@@ -706,7 +706,7 @@ const Summary = () => {
         className="mt-auto w-full flex justify-center py-6 opacity-50"
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
       >
-        <img src={evolveLogoDark} alt="Memo" className="w-20 h-auto" />
+        <Wordmark className="text-xl text-foreground" />
       </footer>
 
       <PinShareDialog
