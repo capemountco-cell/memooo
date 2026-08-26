@@ -332,7 +332,6 @@ export const exportSummaryPdf = async ({
     page: 1,
     headerLabel: 'Meeting Notes / Session Summary',
     footerLeft: [title, dateLabel].filter(Boolean).join(' · '),
-    logo,
   };
 
   drawHeader(ctx);
