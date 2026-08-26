@@ -4,7 +4,7 @@ import { RecordButton } from '@/components/RecordButton';
 import { SessionCard } from '@/components/SessionCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import evolveLogo from '@/assets/evolve-logo-white.svg';
+import { Wordmark } from '@/components/Wordmark';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { THEME_COLORS } from '@/lib/themeColors';
 
@@ -122,7 +122,7 @@ const Index = () => {
       style={{ minHeight: '100svh' }}
     >
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-2xl opacity-0 translate-y-2 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : ''}`}>
-        <img src={evolveLogo} alt="Memo" className="w-24 h-auto mb-12" />
+        <Wordmark className="text-4xl text-primary-foreground mb-12" />
         <div onClick={handleStartRecording} className="cursor-pointer">
           <RecordButton isRecording={hasActiveRecording} onClick={handleStartRecording} />
         </div>

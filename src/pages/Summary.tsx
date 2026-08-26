@@ -13,8 +13,7 @@ import ProgressBar from '@/components/ProgressBar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { exportSummaryPdf } from '@/utils/exportSummaryPdf';
-import evolveLogoDark from '@/assets/evolve-logo-dark.svg';
-import evolveLogoWhite from '@/assets/evolve-logo-white.svg';
+import { Wordmark } from '@/components/Wordmark';
 import { getAudioSignedUrl } from '@/utils/audioUpload';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
 import { stripMarkdown, stripMarkdownInline } from '@/utils/markdown';
@@ -424,7 +423,7 @@ const Summary = () => {
         className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-500"
         style={{ minHeight: '100svh' }}
       >
-        <img src={evolveLogoWhite} alt="Memo" className="w-24 h-auto mb-12" />
+        <Wordmark className="text-4xl text-primary-foreground mb-12" />
         <div className="w-full max-w-2xl px-4">
           <ProgressBar value={loadingProgress} label={loadingLabel} />
         </div>
@@ -707,7 +706,7 @@ const Summary = () => {
         className="mt-auto w-full flex justify-center py-6 opacity-50"
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
       >
-        <img src={evolveLogoDark} alt="Memo" className="w-20 h-auto" />
+        <Wordmark className="text-xl text-foreground" />
       </footer>
 
       <PinShareDialog
