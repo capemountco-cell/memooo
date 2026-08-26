@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="memo">
+<style>g{stroke:#161616}@media (prefers-color-scheme:dark){g{stroke:#ffffff}}</style>
+<g fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+<path d="M19 42V29.5"/>
+<path d="M19 29.5Q19 23 25.5 23Q32 23 32 29.5V42"/>
+<path d="M32 29.5Q32 23 38.5 23Q45 23 45 29.5V42"/>
+</g>
+</svg>
