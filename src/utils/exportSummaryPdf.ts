@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import evolveLogo from '@/assets/evolve-logo-grey.svg';
 import { stripMarkdownInline } from './markdown';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
 
@@ -23,8 +22,6 @@ const TOPBAR_H = 0.34 * IN;
 const HEADER_GAP = 0.26 * IN;
 const BODY_TOP = MARGIN_TOP + TOPBAR_H + HEADER_GAP;
 
-const LOGO_W = 0.78 * IN;
-const LOGO_RATIO = 287 / 1260;
 
 const INK: [number, number, number] = [0x11, 0x11, 0x0f];
 const RULE: [number, number, number] = [0xd8, 0xd7, 0xd2];
@@ -97,43 +94,12 @@ const listOf = (v?: unknown): string[] => {
     .filter(Boolean);
 };
 
-/** Rasterize the tiny EVOLVE mark to a PNG data URL (jsPDF cannot embed SVG). */
-const loadLogoPng = async (): Promise<{ data: string; w: number; h: number } | null> => {
-  try {
-    const scale = 6;
-    const w = Math.round(LOGO_W * scale);
-    const h = Math.round(LOGO_W * LOGO_RATIO * scale);
-
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    const loaded = new Promise<boolean>((resolve) => {
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-    });
-    img.src = evolveLogo;
-    const ok = await loaded;
-    if (!ok) return null;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-    ctx.globalAlpha = 0.75;
-    ctx.drawImage(img, 0, 0, w, h);
-    return { data: canvas.toDataURL('image/png'), w: LOGO_W, h: LOGO_W * LOGO_RATIO };
-  } catch {
-    return null;
-  }
-};
-
 type Ctx = {
   pdf: jsPDF;
   y: number;
   page: number;
   headerLabel: string;
   footerLeft: string;
-  logo: { data: string; w: number; h: number } | null;
 };
 
 const setFill = (pdf: jsPDF, c: [number, number, number]) => pdf.setTextColor(c[0], c[1], c[2]);
@@ -165,21 +131,18 @@ const rule = (ctx: Ctx, color: [number, number, number] = RULE, width = CONTENT_
 
 const drawHeader = (ctx: Ctx) => {
   const { pdf } = ctx;
+  const baseline = MARGIN_TOP + 8;
+
+  // Wordmark first, so the header leaves the label's font state set for whatever draws next.
+  pdf.setFont(SANS, 'bold');
+  pdf.setFontSize(9);
+  setFill(pdf, INK);
+  tracked(pdf, 'memo', PAGE_W - MARGIN_X, baseline, 9 * 0.02, 'right');
+
   pdf.setFont(SANS, 'normal');
   pdf.setFontSize(8.2);
   setFill(pdf, MUTED);
-  tracked(pdf, ctx.headerLabel.toUpperCase(), MARGIN_X, MARGIN_TOP + 8, 8.2 * 0.19);
-
-  if (ctx.logo) {
-    pdf.addImage(
-      ctx.logo.data,
-      'PNG',
-      PAGE_W - MARGIN_X - ctx.logo.w,
-      MARGIN_TOP + 1,
-      ctx.logo.w,
-      ctx.logo.h
-    );
-  }
+  tracked(pdf, ctx.headerLabel.toUpperCase(), MARGIN_X, baseline, 8.2 * 0.19);
 };
 
 const drawFooter = (ctx: Ctx) => {
