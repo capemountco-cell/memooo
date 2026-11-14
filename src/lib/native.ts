@@ -52,6 +52,15 @@ export interface NoteSummary {
   speakers: number;
 }
 
+/** A passage from a past note that matches a question. */
+export interface SearchHit {
+  noteId: string;
+  noteTitle: string;
+  createdAtMs: number;
+  text: string;
+  score: number;
+}
+
 export interface RecordingStatus {
   noteId: string | null;
   paused: boolean;
@@ -85,6 +94,9 @@ export const appendSegments = (id: string, segments: Segment[]) =>
   call<Note>("append_segments", { id, segments });
 export const saveWriteup = (id: string, writeup: Writeup) => call<Note>("save_writeup", { id, writeup });
 export const noteMarkdown = (id: string) => call<string>("note_markdown", { id });
+/** Past notes that may answer `question`, leaving out the meeting being recorded. */
+export const searchNotes = (question: string, excludeId?: string) =>
+  call<SearchHit[]>("search_notes", { question, excludeId: excludeId ?? null });
 
 export const recordingStatus = () => call<RecordingStatus>("recording_status");
 export const startNote = () => call<Note>("start_note");

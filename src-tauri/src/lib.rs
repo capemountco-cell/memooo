@@ -142,6 +142,17 @@ fn save_writeup(
     memo_core::writeup::save_writeup(&mut lock(&state.store), &id, writeup, now_ms()).map_err(text)
 }
 
+/// Passages from past notes about a question asked in a call, best first.
+#[tauri::command]
+fn search_notes(
+    state: State<AppState>,
+    question: String,
+    exclude_id: Option<String>,
+) -> Vec<memo_core::search::SearchHit> {
+    let store = lock(&state.store);
+    memo_core::search::search_notes(store.notes(), &question, exclude_id.as_deref(), 6)
+}
+
 #[tauri::command]
 fn note_markdown(state: State<AppState>, id: String) -> CommandResult<String> {
     let note = lock(&state.store).get(&id).map_err(text)?;
@@ -406,6 +417,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_notes,
             get_note,
+            search_notes,
             save_note,
             delete_note,
             append_line,

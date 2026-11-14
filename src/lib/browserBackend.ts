@@ -4,7 +4,7 @@
  * shapes closely enough to design and click through every screen.
  */
 
-import type { Note, NoteSummary, RecordingStatus } from "./native";
+import type { Note, NoteSummary, RecordingStatus, SearchHit } from "./native";
 
 const notes = new Map<string, Note>();
 let recording: { noteId: string; startedAt: number; pausedTotal: number; pausedSince: number | null } | null =
@@ -150,6 +150,8 @@ export async function browserBackend<T>(command: string, args: Record<string, un
         if (note.title === "Untitled meeting" && writeup.title) note.title = writeup.title;
         return note;
       }
+      case "search_notes":
+        return searchPreview(String(args.question ?? ""), (args.excludeId as string | null) ?? null);
       case "note_markdown": {
         const note = get(id);
         return `# ${summary(note).title}\n\n## Notes\n\n${note.enhanced ?? note.myNotes}\n`;
@@ -195,6 +197,30 @@ export async function browserBackend<T>(command: string, args: Record<string, un
     }
   })();
   return structuredClone(result) as T;
+}
+
+/**
+ * A rough stand-in for the core crate's search, enough to preview answers in
+ * a browser: passages sharing two or more of the question's longer words.
+ */
+function searchPreview(question: string, excludeId: string | null): SearchHit[] {
+  const words = [...new Set(question.toLowerCase().match(/[a-z0-9]{4,}/g) ?? [])];
+  const hits: SearchHit[] = [];
+  for (const note of notes.values()) {
+    if (note.id === excludeId) continue;
+    const passages = [
+      ...(note.writeup?.sections.flatMap((s) => s.points.map((p) => `${s.heading}: ${p.text}`)) ?? []),
+      ...note.myNotes.split("\n").filter(Boolean),
+      ...note.transcript.map((t) => `${t.speaker}: ${t.text}`),
+    ];
+    for (const text of passages) {
+      const score = words.filter((w) => text.toLowerCase().includes(w)).length;
+      if (score >= Math.min(2, words.length) && score > 0) {
+        hits.push({ noteId: note.id, noteTitle: note.title, createdAtMs: note.createdAtMs, text, score });
+      }
+    }
+  }
+  return hits.sort((a, b) => b.score - a.score).slice(0, 6);
 }
 
 /** For tests: forget everything. */

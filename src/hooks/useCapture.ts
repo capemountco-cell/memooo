@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { SampleQueue } from "../lib/audioQueue";
 import { fetchToken, listenUrl, parseMessage, toPcm16, toPcm16Stereo } from "../lib/deepgram";
 import { appendSegments, nativeAvailable, startSystemAudio, stopSystemAudio, type Segment } from "../lib/native";
 import type { MicState } from "./useMicLevels";
@@ -27,37 +28,18 @@ interface Capture {
 const CAPTURE_RATE = 48_000;
 /** Keep at most this much call audio waiting for the microphone (1 s). */
 const MAX_QUEUED = CAPTURE_RATE;
-
-/** Call-audio samples waiting to be paired with the microphone's. */
-class SampleQueue {
-  private chunks: Float32Array[] = [];
-  private queued = 0;
-
-  push(chunk: Float32Array) {
-    this.chunks.push(chunk);
-    this.queued += chunk.length;
-    // Drop the oldest audio rather than fall further and further behind.
-    while (this.queued > MAX_QUEUED && this.chunks.length > 1) this.queued -= this.chunks.shift()!.length;
-  }
-
-  /** Exactly `count` samples, padded with silence when the call is quiet. */
-  take(count: number): Float32Array {
-    const out = new Float32Array(count);
-    let filled = 0;
-    while (filled < count && this.chunks.length > 0) {
-      const head = this.chunks[0]!;
-      const used = Math.min(head.length, count - filled);
-      out.set(head.subarray(0, used), filled);
-      filled += used;
-      if (used === head.length) this.chunks.shift();
-      else this.chunks[0] = head.subarray(used);
-      this.queued -= used;
-    }
-    return out;
-  }
-}
+/** Collect this much call audio before sending it, so gaps between bursts don't chop words (150 ms). */
+const CALL_CUSHION = Math.round(CAPTURE_RATE * 0.15);
 
 const MAX_RECONNECTS = 3;
+/** Lines kept for the overlay's conversation view. */
+const RECENT_LINES = 12;
+
+const DEMO_LINES: Segment[] = [
+  { speaker: "Speaker 2", startSecs: 2, text: "What if we made the free trial 30 days?" },
+  { speaker: "You", startSecs: 6, text: "I think that came up once before." },
+  { speaker: "Speaker 3", startSecs: 9, text: "Why did we pick 14 days back then?" },
+];
 
 /**
  * While `active`, listen to the microphone, draw its level, and stream it to
@@ -76,6 +58,14 @@ export function useCapture(active: boolean, noteId: string | null, elapsedSecs: 
   const [callAudioNote, setCallAudioNote] = useState<string | null>(null);
   const elapsed = useRef(elapsedSecs);
   elapsed.current = elapsedSecs;
+
+  // `npm run dev:web` with `?demo`: a few lines of a call, so the overlay's
+  // conversation and answers can be designed without a real meeting.
+  useEffect(() => {
+    if (!active || !noteId || nativeAvailable()) return;
+    if (!new URLSearchParams(window.location.search).has("demo")) return;
+    setLines(DEMO_LINES);
+  }, [active, noteId]);
 
   useEffect(() => {
     if (!active || !noteId) {
@@ -99,13 +89,13 @@ export function useCapture(active: boolean, noteId: string | null, elapsedSecs: 
     let reconnects = 0;
     let retryTimer = 0;
     let callAudioOn = false;
-    const callQueue = new SampleQueue();
+    const callQueue = new SampleQueue(CALL_CUSHION, MAX_QUEUED);
     setMic("asking");
     setError(null);
 
     const save = (segments: Segment[]) => {
       appendSegments(noteId, segments)
-        .then((note) => setLines(note.transcript.slice(-3)))
+        .then((note) => setLines(note.transcript.slice(-RECENT_LINES)))
         .catch((cause: unknown) => setError(String(cause)));
     };
 
@@ -152,7 +142,13 @@ export function useCapture(active: boolean, noteId: string | null, elapsedSecs: 
     };
 
     navigator.mediaDevices
-      .getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } })
+      // Echo cancellation keeps the call's sound out of the microphone channel.
+      // Noise suppression and automatic gain are off: they smear consonants
+      // ("mom" heard as "mop"), and Deepgram copes with room noise better
+      // than with processed speech.
+      .getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
+      })
       .then((granted) => {
         if (stopped) {
           granted.getTracks().forEach((track) => track.stop());
