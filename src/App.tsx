@@ -52,8 +52,13 @@ export function App() {
     <div className="app">
       <aside className="sidebar drag" data-tauri-drag-region>
         <div className="wordmark">
+          <span className="mark" aria-hidden>
+            <svg width="17" height="12" viewBox="0 30 120 80" fill="none" stroke="#f4efe9" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 96V56a16 16 0 0 1 32 0v40M40 56a16 16 0 0 1 32 0v40" />
+              <circle cx="101" cy="88" r="10" fill="#f4efe9" stroke="none" />
+            </svg>
+          </span>
           memo
-          <span className="rec-dot" />
         </div>
         <nav className="nav" aria-label="Main">
           <button

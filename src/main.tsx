@@ -1,4 +1,4 @@
-import "@fontsource-variable/figtree";
+import "@fontsource-variable/sora";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 

@@ -32,7 +32,7 @@ export function Mini() {
 
   useEffect(() => {
     // The window is opaque, so paint it charcoal edge to edge.
-    document.body.style.background = "#262626";
+    document.body.style.background = "#2e332b";
   }, []);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export function Mini() {
         <Waveform levels={levels} height={18} />
         <span
           className="icon-btn"
-          style={{ width: 32, height: 32, borderRadius: "50%", background: "#3a3a3a", color: "#f2f1ee", marginLeft: "auto" }}
+          style={{ width: 32, height: 32, borderRadius: "50%", background: "#3b4137", color: "#f4efe9", marginLeft: "auto" }}
           aria-label="Expand"
         >
           <ExpandIcon />
@@ -84,7 +84,7 @@ export function Mini() {
   return (
     <div className="mini">
       <div className="mini-head drag" data-tauri-drag-region>
-        {live && <span className="rec-dot" style={recording.paused ? { background: "#a8a7a2" } : undefined} />}
+        {live && <span className="rec-dot" style={recording.paused ? { background: "#b8bdaf" } : undefined} />}
         <span className="time">{live ? clock(recording.elapsedSecs) : "memo"}</span>
         <span className="name">
           {live ? (recording.paused ? "Paused" : title === "Untitled meeting" ? "Recording" : title) : "Not recording"}
