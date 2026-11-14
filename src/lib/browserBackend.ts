@@ -11,6 +11,53 @@ let recording: { noteId: string; startedAt: number; pausedTotal: number; pausedS
   null;
 let seq = 0;
 
+/** `npm run dev:web` with `?demo` in the address: one finished sample note, for design previews. */
+if (typeof window !== "undefined" && new URLSearchParams(window.location.search).has("demo")) {
+  const now = Date.now();
+  notes.set("ndemo", {
+    id: "ndemo",
+    title: "Team stand-up",
+    createdAtMs: now - 3_600_000,
+    updatedAtMs: now - 3_600_000,
+    durationSecs: 1_680,
+    myNotes: "ship date for calendar sync?\nsam — prototype by weds\nluke blocked on api keys, ask infra",
+    transcript: [
+      { speaker: "You", startSecs: 4, text: "Quick round today. Sam, where's the prototype?" },
+      { speaker: "Speaker 2", startSecs: 9, text: "Ready by Wednesday. I just need the empty states." },
+      { speaker: "Speaker 3", startSecs: 21, text: "I'm still waiting on API keys from infra, so I can't test staging." },
+      { speaker: "Speaker 4", startSecs: 33, text: "I'll escalate if they're not issued by three." },
+      { speaker: "You", startSecs: 41, text: "Great. And calendar sync is still the 28th?" },
+      { speaker: "Speaker 2", startSecs: 46, text: "If Google's review lands this week. Otherwise iCloud goes first." },
+    ],
+    enhanced: null,
+    writeup: {
+      title: "Team stand-up",
+      sections: [
+        {
+          heading: "Calendar sync",
+          points: [
+            { text: "Ship date for calendar sync is the 28th.", fromYou: true },
+            { text: "Depends on Google's review finishing this week; iCloud ships first if it slips.", fromYou: false },
+          ],
+        },
+        {
+          heading: "Blockers",
+          points: [
+            { text: "Luke is blocked on API keys from infra.", fromYou: true },
+            { text: "Priya will escalate if the keys aren't issued by 3pm.", fromYou: false },
+          ],
+        },
+      ],
+      actionItems: [
+        { task: "Finish empty states and share the prototype", owner: "Speaker 2", due: "Wednesday" },
+        { task: "Get staging API keys issued", owner: "Speaker 3", due: "Today" },
+        { task: "Escalate the key request if needed", owner: "Speaker 4", due: "3pm" },
+        { task: "Confirm the calendar sync date", owner: "You", due: "" },
+      ],
+    },
+  });
+}
+
 function emit(name: string, detail: unknown) {
   if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(`memo:${name}`, { detail }));
 }

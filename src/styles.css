@@ -27,6 +27,26 @@
   --rec-ink: #8e2b1a;
   --shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
 
+  /* Speaker tones: a soft tint with a darker ink of the same hue (4.5:1+). */
+  --sp0-bg: #e8e6e1;
+  --sp0-ink: #1f1f1f;
+  --sp0-dot: #8a8780;
+  --sp1-bg: #f3e6de;
+  --sp1-ink: #7a4329;
+  --sp1-dot: #b5714f;
+  --sp2-bg: #e4ece1;
+  --sp2-ink: #3f5e3b;
+  --sp2-dot: #6f8f6a;
+  --sp3-bg: #e2e9f1;
+  --sp3-ink: #34506e;
+  --sp3-dot: #5f7fa3;
+  --sp4-bg: #ece3ee;
+  --sp4-ink: #5e4366;
+  --sp4-dot: #8c6a93;
+  --sp5-bg: #f1ebd9;
+  --sp5-ink: #6b5420;
+  --sp5-dot: #a88a3e;
+
   --r-sm: 8px;
   --r-btn: 10px;
   --r-card: 14px;
@@ -47,6 +67,24 @@
     --btn: #f2f1ee;
     --btn-ink: #111111;
     --rec-tint: #4a2a23;
+    --sp0-bg: #3a3936;
+    --sp0-ink: #f2f1ee;
+    --sp0-dot: #a8a7a2;
+    --sp1-bg: #46322a;
+    --sp1-ink: #f0c9b4;
+    --sp1-dot: #d08a66;
+    --sp2-bg: #2f3d2e;
+    --sp2-ink: #c3dcbd;
+    --sp2-dot: #8fb488;
+    --sp3-bg: #2c3744;
+    --sp3-ink: #bfd2e8;
+    --sp3-dot: #85a5c9;
+    --sp4-bg: #3b2f3e;
+    --sp4-ink: #e0c9e6;
+    --sp4-dot: #b08bb8;
+    --sp5-bg: #403823;
+    --sp5-ink: #e6d4a4;
+    --sp5-dot: #c9a957;
     --rec-ink: #f0a898;
     --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   }
@@ -749,11 +787,9 @@ button {
   user-select: text;
 }
 
-.transcript-line strong {
+.transcript-line .who-col {
   flex-shrink: 0;
-  min-width: 76px;
-  color: var(--ink);
-  font-weight: 700;
+  width: 100px;
 }
 
 .transcript-line.interim span {
@@ -772,7 +808,7 @@ button {
 .transcript {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
@@ -884,4 +920,92 @@ button {
   border-radius: var(--r-btn);
   background: var(--stone);
   color: var(--soft);
+}
+
+/* ---- Speakers -------------------------------------------------------- */
+
+.speaker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px 0 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  background: var(--sp0-bg);
+  color: var(--sp0-ink);
+}
+
+.speaker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sp0-dot);
+}
+
+.speaker[data-tone="0"] {
+  background: var(--sp0-bg);
+  color: var(--sp0-ink);
+}
+
+.speaker[data-tone="0"] .speaker-dot {
+  background: var(--sp0-dot);
+}
+
+.speaker[data-tone="1"] {
+  background: var(--sp1-bg);
+  color: var(--sp1-ink);
+}
+
+.speaker[data-tone="1"] .speaker-dot {
+  background: var(--sp1-dot);
+}
+
+.speaker[data-tone="2"] {
+  background: var(--sp2-bg);
+  color: var(--sp2-ink);
+}
+
+.speaker[data-tone="2"] .speaker-dot {
+  background: var(--sp2-dot);
+}
+
+.speaker[data-tone="3"] {
+  background: var(--sp3-bg);
+  color: var(--sp3-ink);
+}
+
+.speaker[data-tone="3"] .speaker-dot {
+  background: var(--sp3-dot);
+}
+
+.speaker[data-tone="4"] {
+  background: var(--sp4-bg);
+  color: var(--sp4-ink);
+}
+
+.speaker[data-tone="4"] .speaker-dot {
+  background: var(--sp4-dot);
+}
+
+.speaker[data-tone="5"] {
+  background: var(--sp5-bg);
+  color: var(--sp5-ink);
+}
+
+.speaker[data-tone="5"] .speaker-dot {
+  background: var(--sp5-dot);
+}
+
+.people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.writeup .actions .speaker {
+  flex-shrink: 0;
 }

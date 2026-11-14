@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { BackIcon, PauseIcon, PlayIcon, PopOutIcon } from "../components/Icons";
+import { SpeakerChip } from "../components/SpeakerChip";
 import { Waveform } from "../components/Waveform";
 import { useCapture } from "../hooks/useCapture";
 import { clock, dayLabel, length } from "../lib/format";
@@ -17,6 +18,7 @@ import {
   type RecordingStatus,
   type Writeup,
 } from "../lib/native";
+import { speakersOf } from "../lib/speakers";
 import { hasMaterial, requestWriteup } from "../lib/writeup";
 
 interface Props {
@@ -51,7 +53,7 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
     getNote(id)
       .then((loaded) => {
         setNote(loaded);
-        setView(loaded.enhanced ? "written" : "mine");
+        setView(loaded.writeup || loaded.enhanced ? "written" : "mine");
       })
       .catch((cause: unknown) => setError(String(cause)));
   }, [id]);
@@ -233,6 +235,14 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
             )}
           </div>
 
+          {note.transcript.length > 0 && (
+            <div className="people" aria-label="People in this meeting">
+              {speakersOf(note.transcript).map((name) => (
+                <SpeakerChip key={name} name={name} />
+              ))}
+            </div>
+          )}
+
           {error && <p className="error-banner">{error}</p>}
           {writeError && <p className="error-banner">{writeError}</p>}
           {writing && (
@@ -266,7 +276,9 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
               <summary className="label">Transcript · {note.transcript.length} turns</summary>
               {note.transcript.map((line, index) => (
                 <p key={`${line.startSecs}-${index}`} className="transcript-line">
-                  <strong>{line.speaker}</strong>
+                  <span className="who-col">
+                    <SpeakerChip name={line.speaker} />
+                  </span>
                   <span className="stamp">{clock(line.startSecs)}</span>
                   <span>{line.text}</span>
                 </p>
@@ -287,13 +299,17 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
           {capture.error && <p className="hint" style={{ margin: 0, color: "var(--rec-ink)" }}>{capture.error}</p>}
           {capture.lines.map((line, index) => (
             <p key={`${line.startSecs}-${index}`} className="transcript-line">
-              <strong>{line.speaker}</strong>
+              <span className="who-col">
+                    <SpeakerChip name={line.speaker} />
+                  </span>
               <span>{line.text}</span>
             </p>
           ))}
           {capture.interim && (
             <p className="transcript-line interim">
-              <strong>…</strong>
+              <span className="speaker" data-tone="0" aria-hidden>
+                …
+              </span>
               <span>{capture.interim}</span>
             </p>
           )}
@@ -337,9 +353,8 @@ function WriteupView({ writeup }: { writeup: Writeup }) {
               <li key={index}>
                 <span className="box" aria-hidden />
                 <span className="task">{item.task}</span>
-                {(item.owner || item.due) && (
-                  <span className="who">{[item.owner, item.due].filter(Boolean).join(" · ")}</span>
-                )}
+                {item.owner && <SpeakerChip name={item.owner} />}
+                {item.due && <span className="who">{item.due}</span>}
               </li>
             ))}
           </ul>
