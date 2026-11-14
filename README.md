@@ -1,75 +1,95 @@
-# Memo
+# Mac App Template
 
-Voice transcribing & meeting insights.
+A starting point for native macOS apps that build a working `.dmg` from day
+one. Tauri 2, Rust and React, with every known way the `.dmg` step fails
+handled by the scripts rather than by you.
 
-## Project info
+## Start a new app
 
-**URL**: https://lovable.dev/projects/b5f30b37-29c2-4a17-98f7-b0cb69ddcf69
+Create an empty GitHub repository for the app, open a Claude chat with it
+selected, and paste the prompt in [docs/new-app.md](docs/new-app.md). The
+chat copies this template in, names it, and checks that the `.dmg` builds.
 
-## How can I edit this code?
+### Or do it yourself
 
-There are several ways of editing your application.
+1. On GitHub, click **Use this template** > **Create a new repository**.
+2. Clone it, then name it:
 
-**Use Lovable**
+   ```sh
+   npm install
+   npm run init -- --name "My App" --id com.yourname.myapp
+   ```
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b5f30b37-29c2-4a17-98f7-b0cb69ddcf69) and start prompting.
+3. Check this Mac has what it needs, and fix anything it lists:
 
-Changes made via Lovable will be committed automatically to this repo.
+   ```sh
+   npm run doctor
+   ```
 
-**Use your preferred IDE**
+4. Run it:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+   ```sh
+   npm run dev
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+5. Package it:
 
-Follow these steps:
+   ```sh
+   npm run dmg
+   ```
+
+   The image lands at `release/My App-0.1.0-arm64.dmg`, already checked:
+   it mounts, holds the app and an Applications link, and the signature is
+   valid.
+
+## Everyday commands
+
+| Command | Does |
+| --- | --- |
+| `npm run dev` | Runs the app with live reload |
+| `npm run check` | Type check, tests, Rust format, lint and tests. Run before every push |
+| `npm run dmg` | Builds and verifies a `.dmg` for this Mac's chip |
+| `npm run dmg:universal` | One `.dmg` for Apple silicon and Intel |
+| `npm run dmg -- --plain` | Same, without the Finder window styling (over SSH, or if that step hangs) |
+| `npm run verify-dmg -- path.dmg` | Checks any `.dmg` |
+| `npm run icons` | Regenerates every icon size from `src-tauri/app-icon.png` (1024×1024) |
+| `npm run set-version -- 1.2.0` | Sets the version everywhere it lives |
+| `npm run doctor` | Lists anything missing on this machine, with the fix |
+
+## Releasing
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+npm run set-version -- 1.0.0
+git commit -am "Release 1.0.0"
+git tag v1.0.0
+git push && git push --tags
 ```
 
-**Edit a file directly in GitHub**
+GitHub Actions builds a universal `.dmg` and attaches it to a GitHub release.
+It is signed and notarized if you have added Apple credentials as secrets
+([docs/signing.md](docs/signing.md)), and ad-hoc signed otherwise.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Every push also runs CI, which builds a `.dmg` on a real Mac and attaches it
+to the run, so a change that breaks packaging is caught on the day it is made.
 
-**Use GitHub Codespaces**
+## Layout
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+crates/starter-core/   The app's logic. No Tauri, so it tests on any OS.
+src-tauri/             The native shell: window, commands, bundling config.
+  tauri.conf.json      Name, id, window, .dmg layout, signing.
+  entitlements.plist   What the hardened runtime allows.
+  app-icon.png         The one icon you edit; npm run icons makes the rest.
+src/                   The React interface.
+  lib/native.ts        Every call from the UI to Rust, in one place.
+scripts/               doctor, init, build-dmg, verify-dmg, set-version.
+docs/                  dmg.md (failures and fixes), signing.md.
+```
 
-## What technologies are used for this project?
+`init` renames `starter` and `starter-core` to your app's name.
 
-This project is built with:
+## Requirements
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b5f30b37-29c2-4a17-98f7-b0cb69ddcf69) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+macOS 12 or newer to build, with the Xcode command line tools, Node 20+ and
+Rust. `npm run doctor` checks all of it. The core crate and the frontend also
+build and test on Linux, and that is what CI does first.
