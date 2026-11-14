@@ -263,13 +263,13 @@ const Recorder = () => {
             });
           }, 800); // Increment every 800ms
           
-          // Try Deepgram first (pass storage path instead of base64)
+          // Transcribe with Whisper (pass storage path instead of base64)
           let transcript = '';
           let transcriptData, transcriptError;
-          
+
           try {
-            const deepgramResult = await supabase.functions.invoke(
-              'transcribe-deepgram',
+            const whisperResult = await supabase.functions.invoke(
+              'transcribe-whisper',
               {
                 body: {
                   audioPath: audioUrl,
@@ -277,34 +277,11 @@ const Recorder = () => {
                 },
               }
             );
-            transcriptData = deepgramResult.data;
-            transcriptError = deepgramResult.error;
+            transcriptData = whisperResult.data;
+            transcriptError = whisperResult.error;
           } catch (err) {
-            console.error('Deepgram error:', err);
+            console.error('Whisper error:', err);
             transcriptError = err;
-          }
-
-          // Fallback to Whisper if Deepgram fails
-          if (transcriptError || !transcriptData?.success) {
-            console.log('Deepgram failed, falling back to Whisper...');
-            setProgressLabel('Transcribing...');
-            
-            try {
-              const whisperResult = await supabase.functions.invoke(
-                'transcribe-whisper',
-                {
-                  body: {
-                    audioPath: audioUrl,
-                    sessionId,
-                  },
-                }
-              );
-              transcriptData = whisperResult.data;
-              transcriptError = whisperResult.error;
-            } catch (err) {
-              console.error('Whisper error:', err);
-              transcriptError = err;
-            }
           }
 
           // Stop progress simulation
