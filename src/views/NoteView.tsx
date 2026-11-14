@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { BackIcon, PauseIcon, PlayIcon, PopOutIcon } from "../components/Icons";
+import { SpeakerChip } from "../components/SpeakerChip";
 import { Waveform } from "../components/Waveform";
 import { useCapture } from "../hooks/useCapture";
 import { clock, dayLabel, length } from "../lib/format";
@@ -9,12 +10,16 @@ import {
   getNote,
   noteMarkdown,
   saveNote,
+  saveWriteup,
   showMini,
   stopNote,
   togglePause,
   type Note,
   type RecordingStatus,
+  type Writeup,
 } from "../lib/native";
+import { speakersOf } from "../lib/speakers";
+import { hasMaterial, requestWriteup } from "../lib/writeup";
 
 interface Props {
   id: string;
@@ -32,6 +37,9 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"mine" | "written">("mine");
   const [copied, setCopied] = useState(false);
+  const [writing, setWriting] = useState(false);
+  const [writeError, setWriteError] = useState<string | null>(null);
+  const wasLive = useRef(false);
   const pending = useRef<Note | null>(null);
   const timer = useRef<number | undefined>(undefined);
 
@@ -45,14 +53,23 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
     getNote(id)
       .then((loaded) => {
         setNote(loaded);
-        setView(loaded.enhanced ? "written" : "mine");
+        setView(loaded.writeup || loaded.enhanced ? "written" : "mine");
       })
       .catch((cause: unknown) => setError(String(cause)));
   }, [id]);
 
-  // Reload after the recording stops, so the saved length shows.
+  // When the recording stops: reload (for the saved length and transcript),
+  // then write the meeting up straight away if there is anything to work with.
   useEffect(() => {
-    if (!live && note) getNote(id).then((fresh) => setNote((current) => ({ ...fresh, ...pendingEdits(current) })));
+    const justStopped = wasLive.current && !live;
+    wasLive.current = live;
+    if (!justStopped || !note) return;
+    void (async () => {
+      await flush();
+      const fresh = await getNote(id);
+      setNote(fresh);
+      if (hasMaterial(fresh) && !fresh.writeup) await writeUp();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live]);
 
@@ -90,6 +107,25 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
       await action();
     } catch (cause) {
       setError(String(cause));
+    }
+  };
+
+  const writeUp = async () => {
+    setWriteError(null);
+    setWriting(true);
+    try {
+      await flush();
+      const fresh = await getNote(id);
+      if (!hasMaterial(fresh)) throw new Error("Write some notes or record the meeting first.");
+      const writeup = await requestWriteup(fresh);
+      const saved = await saveWriteup(id, writeup);
+      setNote(saved);
+      setView("written");
+      onChanged();
+    } catch (cause) {
+      setWriteError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setWriting(false);
     }
   };
 
@@ -158,6 +194,14 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
               <button type="button" className="btn btn-secondary" onClick={copy}>
                 {copied ? "Copied" : "Copy as Markdown"}
               </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={writing || !hasMaterial(note)}
+                onClick={() => void writeUp()}
+              >
+                {writing ? "Writing up…" : note.writeup ? "Write up again" : "Write up"}
+              </button>
             </>
           )}
         </div>
@@ -179,7 +223,7 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
           <div className="chips">
             <span className="chip">{dayLabel(note.createdAtMs)}</span>
             {note.durationSecs > 0 && !live && <span className="chip">{length(note.durationSecs)}</span>}
-            {note.enhanced && (
+            {(note.writeup || note.enhanced) && (
               <div className="segmented" role="group" aria-label="Which version">
                 <button type="button" aria-pressed={view === "mine"} onClick={() => setView("mine")}>
                   My notes
@@ -191,9 +235,25 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
             )}
           </div>
 
-          {error && <p className="error-banner">{error}</p>}
+          {note.transcript.length > 0 && (
+            <div className="people" aria-label="People in this meeting">
+              {speakersOf(note.transcript).map((name) => (
+                <SpeakerChip key={name} name={name} />
+              ))}
+            </div>
+          )}
 
-          {view === "written" && note.enhanced ? (
+          {error && <p className="error-banner">{error}</p>}
+          {writeError && <p className="error-banner">{writeError}</p>}
+          {writing && (
+            <p className="hint writing" role="status">
+              Writing up your notes and the transcript…
+            </p>
+          )}
+
+          {view === "written" && note.writeup ? (
+            <WriteupView writeup={note.writeup} />
+          ) : view === "written" && note.enhanced ? (
             <div className="prose">{note.enhanced}</div>
           ) : (
             <>
@@ -216,7 +276,9 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
               <summary className="label">Transcript · {note.transcript.length} turns</summary>
               {note.transcript.map((line, index) => (
                 <p key={`${line.startSecs}-${index}`} className="transcript-line">
-                  <strong>{line.speaker}</strong>
+                  <span className="who-col">
+                    <SpeakerChip name={line.speaker} />
+                  </span>
                   <span className="stamp">{clock(line.startSecs)}</span>
                   <span>{line.text}</span>
                 </p>
@@ -237,13 +299,17 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
           {capture.error && <p className="hint" style={{ margin: 0, color: "var(--rec-ink)" }}>{capture.error}</p>}
           {capture.lines.map((line, index) => (
             <p key={`${line.startSecs}-${index}`} className="transcript-line">
-              <strong>{line.speaker}</strong>
+              <span className="who-col">
+                    <SpeakerChip name={line.speaker} />
+                  </span>
               <span>{line.text}</span>
             </p>
           ))}
           {capture.interim && (
             <p className="transcript-line interim">
-              <strong>…</strong>
+              <span className="speaker" data-tone="0" aria-hidden>
+                …
+              </span>
               <span>{capture.interim}</span>
             </p>
           )}
@@ -258,9 +324,48 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
   );
 }
 
-function pendingEdits(current: Note | null): Partial<Note> {
-  if (!current) return {};
-  return { title: current.title, myNotes: current.myNotes };
+/** The write-up: the user's points in ink, Memo's additions in grey. */
+function WriteupView({ writeup }: { writeup: Writeup }) {
+  const items = writeup.actionItems.filter((item) => item.task.trim());
+  return (
+    <div className="writeup">
+      {writeup.sections
+        .filter((section) => section.points.some((point) => point.text.trim()))
+        .map((section, index) => (
+          <section key={`${section.heading}-${index}`}>
+            <h2>{section.heading}</h2>
+            <ul>
+              {section.points
+                .filter((point) => point.text.trim())
+                .map((point, pointIndex) => (
+                  <li key={pointIndex} className={point.fromYou ? "yours" : "added"}>
+                    {point.text}
+                  </li>
+                ))}
+            </ul>
+          </section>
+        ))}
+      {items.length > 0 && (
+        <section>
+          <h2>Action items</h2>
+          <ul className="actions">
+            {items.map((item, index) => (
+              <li key={index}>
+                <span className="box" aria-hidden />
+                <span className="task">{item.task}</span>
+                {item.owner && <SpeakerChip name={item.owner} />}
+                {item.due && <span className="who">{item.due}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <p className="legend">
+        <span className="swatch yours" aria-hidden /> Your notes
+        <span className="swatch added" aria-hidden /> Added by Memo from the transcript
+      </p>
+    </div>
+  );
 }
 
 function micLabel(state: string, paused: boolean, transcript: string, callAudio: string): string {
