@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { stripMarkdownInline } from './markdown';
+import { CAPTAIN_ASPECT, CAPTAIN_PATH } from '@/assets/captainWordmark';
 import { parseSpeakerTurns, buildSpeakerColorMap, SPEAKER_PALETTE } from '@/utils/speakerTranscript';
 
 
@@ -129,15 +130,39 @@ const rule = (ctx: Ctx, color: [number, number, number] = RULE, width = CONTENT_
   ctx.pdf.line(MARGIN_X, ctx.y, MARGIN_X + width, ctx.y);
 };
 
+/** The signature drawn once to a PNG (crisp at print size), in the ink colour. */
+let wordmarkCache: string | null | undefined;
+const wordmarkPng = (): string | null => {
+  if (wordmarkCache !== undefined) return wordmarkCache;
+  try {
+    const height = 160;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(height * CAPTAIN_ASPECT);
+    canvas.height = height;
+    const g = canvas.getContext('2d');
+    if (!g) return (wordmarkCache = null);
+    g.scale(canvas.width / 2042, height / 576);
+    g.translate(-78, -96);
+    g.fillStyle = `rgb(${INK.join(',')})`;
+    g.fill(new Path2D(CAPTAIN_PATH), 'evenodd');
+    wordmarkCache = canvas.toDataURL('image/png');
+  } catch {
+    wordmarkCache = null;
+  }
+  return wordmarkCache;
+};
+
 const drawHeader = (ctx: Ctx) => {
   const { pdf } = ctx;
   const baseline = MARGIN_TOP + 8;
 
-  // Wordmark first, so the header leaves the label's font state set for whatever draws next.
-  pdf.setFont(SANS, 'bold');
-  pdf.setFontSize(9);
-  setFill(pdf, INK);
-  tracked(pdf, 'memo', PAGE_W - MARGIN_X, baseline, 9 * 0.02, 'right');
+  // The Captain signature, top right, sitting on the label's baseline.
+  const logo = wordmarkPng();
+  if (logo) {
+    const h = 13;
+    const w = h * CAPTAIN_ASPECT;
+    pdf.addImage(logo, 'PNG', PAGE_W - MARGIN_X - w, baseline - h * 0.78, w, h);
+  }
 
   pdf.setFont(SANS, 'normal');
   pdf.setFontSize(8.2);

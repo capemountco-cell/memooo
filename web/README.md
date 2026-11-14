@@ -1,6 +1,6 @@
-# Memo
+# Captain
 
-Voice transcribing & meeting insights.
+Meeting notes that listen alongside you.
 
 ## Project info
 

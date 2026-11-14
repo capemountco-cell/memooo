@@ -17,7 +17,7 @@ tauri-build = { version = "2", features = [] }
 memo-core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
+tauri = { version = "2", features = ["tray-icon", "macos-private-api", "image-png"] }
 tauri-plugin-global-shortcut = "2"
 
 # System audio (the other side of a call) and screen snapshots. macOS only.
