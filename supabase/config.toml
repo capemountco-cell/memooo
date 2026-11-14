@@ -1,8 +1,5 @@
 project_id = "rizvcdhpyndjwckoodlu"
 
-[functions.transcribe-deepgram]
-verify_jwt = true
-
 [functions.transcribe-whisper]
 verify_jwt = true
 

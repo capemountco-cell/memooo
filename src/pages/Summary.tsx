@@ -250,12 +250,12 @@ const Summary = () => {
       setIsRefreshing(true);
       toast.info('Retrying transcription...', { duration: 2000 });
       
-      // Try Deepgram first (pass storage path instead of base64)
+      // Transcribe with Whisper (pass storage path instead of base64)
       let transcriptData, transcriptError;
-      
+
       try {
-        const deepgramResult = await supabase.functions.invoke(
-          'transcribe-deepgram',
+        const whisperResult = await supabase.functions.invoke(
+          'transcribe-whisper',
           {
             body: {
               audioPath: session.audio_url,
@@ -263,37 +263,15 @@ const Summary = () => {
             },
           }
         );
-        transcriptData = deepgramResult.data;
-        transcriptError = deepgramResult.error;
+        transcriptData = whisperResult.data;
+        transcriptError = whisperResult.error;
       } catch (err) {
-        console.error('Deepgram error:', err);
+        console.error('Whisper error:', err);
         transcriptError = err;
       }
 
-      // Fallback to Whisper if Deepgram fails
       if (transcriptError || !transcriptData?.success) {
-        console.log('Deepgram failed, falling back to Whisper...');
-        
-        try {
-          const whisperResult = await supabase.functions.invoke(
-            'transcribe-whisper',
-            {
-              body: {
-                audioPath: session.audio_url,
-                sessionId: id,
-              },
-            }
-          );
-          transcriptData = whisperResult.data;
-          transcriptError = whisperResult.error;
-        } catch (err) {
-          console.error('Whisper error:', err);
-          transcriptError = err;
-        }
-      }
-
-      if (transcriptError || !transcriptData?.success) {
-        throw new Error('Both Deepgram and Whisper transcription failed');
+        throw new Error('Whisper transcription failed');
       }
 
       const newTranscript = transcriptData.text;
