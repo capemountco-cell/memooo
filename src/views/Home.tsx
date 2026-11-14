@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 
 import { SearchIcon } from "../components/Icons";
 import { dayLabel, greeting, length } from "../lib/format";
@@ -9,9 +9,11 @@ interface Props {
   recording: RecordingStatus;
   onStart: () => void;
   onOpen: (id: string) => void;
+  /** Right-click on a note: its menu (open, delete). */
+  onMenu: (id: string) => (event: MouseEvent) => void;
 }
 
-export function Home({ notes, recording, onStart, onOpen }: Props) {
+export function Home({ notes, recording, onStart, onOpen, onMenu }: Props) {
   const [query, setQuery] = useState("");
   const now = new Date();
 
@@ -89,7 +91,13 @@ export function Home({ notes, recording, onStart, onOpen }: Props) {
             ) : (
               <div className="note-list">
                 {shown.map((note) => (
-                  <button key={note.id} type="button" className="note-row" onClick={() => onOpen(note.id)}>
+                  <button
+                    key={note.id}
+                    type="button"
+                    className="note-row"
+                    onClick={() => onOpen(note.id)}
+                    onContextMenu={onMenu(note.id)}
+                  >
                     <span className="when">{dayLabel(note.createdAtMs, now).toUpperCase()}</span>
                     <span className="body">
                       <span className="title">{note.title}</span>
