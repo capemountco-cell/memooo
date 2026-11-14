@@ -85,6 +85,13 @@ export async function browserBackend<T>(command: string, args: Record<string, un
         if (line) note.myNotes = note.myNotes ? `${note.myNotes.replace(/\n$/, "")}\n${line}` : line;
         return note;
       }
+      case "append_segments": {
+        const note = get(id);
+        for (const segment of args.segments as Note["transcript"]) {
+          if (segment.text.trim()) note.transcript.push({ ...segment, text: segment.text.trim() });
+        }
+        return note;
+      }
       case "note_markdown": {
         const note = get(id);
         return `# ${summary(note).title}\n\n## Notes\n\n${note.enhanced ?? note.myNotes}\n`;

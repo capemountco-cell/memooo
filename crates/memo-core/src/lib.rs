@@ -90,6 +90,52 @@ pub fn append_line(
     store.save(note, now_ms)
 }
 
+/// Lines from the same speaker this close together (seconds) are one turn.
+const SAME_TURN_GAP_SECS: u64 = 4;
+
+/// Add finished transcript lines to a note. A line that continues the last
+/// speaker's turn is joined onto it, so the transcript reads in turns rather
+/// than in fragments. Blank lines are dropped.
+pub fn append_segments(
+    store: &mut NoteStore,
+    id: &str,
+    segments: Vec<Segment>,
+    now_ms: u64,
+) -> Result<Note, StoreError> {
+    let mut note = store.get(id)?;
+    let mut changed = false;
+    for incoming in segments {
+        let text = incoming.text.trim();
+        if text.is_empty() {
+            continue;
+        }
+        changed = true;
+        match note.transcript.last_mut() {
+            Some(last) if continues_turn(last, &incoming) => {
+                last.text.push(' ');
+                last.text.push_str(text);
+            }
+            _ => note.transcript.push(Segment {
+                speaker: incoming.speaker,
+                start_secs: incoming.start_secs,
+                text: text.to_string(),
+            }),
+        }
+    }
+    if !changed {
+        return Ok(note);
+    }
+    store.save(note, now_ms)
+}
+
+/// Same speaker, and either they barely paused or their last line did not
+/// finish a sentence.
+fn continues_turn(last: &Segment, incoming: &Segment) -> bool {
+    last.speaker == incoming.speaker
+        && (incoming.start_secs <= last.start_secs + SAME_TURN_GAP_SECS
+            || !last.text.trim_end().ends_with(['.', '?', '!']))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,6 +168,46 @@ mod tests {
         start_new_note(&mut store, &mut recorder, 1).unwrap();
         assert!(start_new_note(&mut store, &mut recorder, 2).is_err());
         assert_eq!(store.list().len(), 1);
+        let _ = std::fs::remove_file(store.path());
+    }
+
+    fn seg(speaker: &str, start_secs: u64, text: &str) -> Segment {
+        Segment {
+            speaker: speaker.into(),
+            start_secs,
+            text: text.into(),
+        }
+    }
+
+    #[test]
+    fn joins_a_speakers_turn_and_splits_on_a_new_speaker() {
+        let mut store = store("segments");
+        let note = store.create(1).unwrap();
+        let note = append_segments(
+            &mut store,
+            &note.id,
+            vec![
+                seg("Speaker 1", 0, "The prototype should be"),
+                seg("Speaker 1", 9, "ready by Wednesday."),
+                seg("Speaker 2", 11, "Great."),
+                seg("Speaker 2", 30, "Luke, anything blocking you?"),
+                seg("Speaker 1", 33, "  "),
+            ],
+            2,
+        )
+        .unwrap();
+        assert_eq!(
+            note.transcript,
+            vec![
+                seg(
+                    "Speaker 1",
+                    0,
+                    "The prototype should be ready by Wednesday."
+                ),
+                seg("Speaker 2", 11, "Great."),
+                seg("Speaker 2", 30, "Luke, anything blocking you?"),
+            ]
+        );
         let _ = std::fs::remove_file(store.path());
     }
 

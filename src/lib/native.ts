@@ -68,6 +68,8 @@ export const getNote = (id: string) => call<Note>("get_note", { id });
 export const saveNote = (note: Note) => call<Note>("save_note", { note });
 export const deleteNote = (id: string) => call<void>("delete_note", { id });
 export const appendLine = (id: string, line: string) => call<Note>("append_line", { id, line });
+export const appendSegments = (id: string, segments: Segment[]) =>
+  call<Note>("append_segments", { id, segments });
 export const noteMarkdown = (id: string) => call<string>("note_markdown", { id });
 
 export const recordingStatus = () => call<RecordingStatus>("recording_status");

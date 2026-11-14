@@ -10,7 +10,7 @@
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use memo_core::{Note, NoteStore, NoteSummary, Recorder, RecordingStatus};
+use memo_core::{Note, NoteStore, NoteSummary, Recorder, RecordingStatus, Segment};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder};
@@ -104,6 +104,15 @@ fn delete_note(state: State<AppState>, id: String) -> CommandResult<()> {
 #[tauri::command]
 fn append_line(state: State<AppState>, id: String, line: String) -> CommandResult<Note> {
     memo_core::append_line(&mut lock(&state.store), &id, &line, now_ms()).map_err(text)
+}
+
+#[tauri::command]
+fn append_segments(
+    state: State<AppState>,
+    id: String,
+    segments: Vec<Segment>,
+) -> CommandResult<Note> {
+    memo_core::append_segments(&mut lock(&state.store), &id, segments, now_ms()).map_err(text)
 }
 
 #[tauri::command]
@@ -313,6 +322,7 @@ pub fn run() {
             save_note,
             delete_note,
             append_line,
+            append_segments,
             note_markdown,
             recording_status,
             start_note,

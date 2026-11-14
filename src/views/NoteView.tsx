@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { BackIcon, PauseIcon, PlayIcon, PopOutIcon } from "../components/Icons";
 import { Waveform } from "../components/Waveform";
-import { useMicLevels } from "../hooks/useMicLevels";
+import { useCapture } from "../hooks/useCapture";
 import { clock, dayLabel, length } from "../lib/format";
 import {
   deleteNote,
@@ -36,7 +36,8 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
   const timer = useRef<number | undefined>(undefined);
 
   const live = recording.noteId === id;
-  const { levels, state: mic } = useMicLevels(live && !recording.paused, 28);
+  const capture = useCapture(live && !recording.paused, live ? id : null, recording.elapsedSecs, 28);
+  const { levels, mic } = capture;
 
   useEffect(() => {
     setNote(null);
@@ -209,18 +210,45 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
               />
             </>
           )}
+
+          {!live && note.transcript.length > 0 && (
+            <details className="transcript">
+              <summary className="label">Transcript · {note.transcript.length} turns</summary>
+              {note.transcript.map((line, index) => (
+                <p key={`${line.startSecs}-${index}`} className="transcript-line">
+                  <strong>{line.speaker}</strong>
+                  <span className="stamp">{clock(line.startSecs)}</span>
+                  <span>{line.text}</span>
+                </p>
+              ))}
+            </details>
+          )}
         </article>
       </div>
 
       {live && (
-        <section className="transcript-panel" aria-label="Recording">
+        <section className="transcript-panel" aria-label="Live transcript" aria-live="polite">
           <div className="row">
-            <span className="label">{micLabel(mic, recording.paused)}</span>
+            <span className="label">{micLabel(mic, recording.paused, capture.transcript)}</span>
           </div>
-          <p className="hint" style={{ margin: 0 }}>
-            Live transcription is the next piece being built. Your notes and the recording time are saved as you
-            go.
-          </p>
+          {capture.error && <p className="hint" style={{ margin: 0, color: "var(--rec-ink)" }}>{capture.error}</p>}
+          {capture.lines.map((line, index) => (
+            <p key={`${line.startSecs}-${index}`} className="transcript-line">
+              <strong>{line.speaker}</strong>
+              <span>{line.text}</span>
+            </p>
+          ))}
+          {capture.interim && (
+            <p className="transcript-line interim">
+              <strong>…</strong>
+              <span>{capture.interim}</span>
+            </p>
+          )}
+          {!capture.error && capture.lines.length === 0 && !capture.interim && (
+            <p className="hint" style={{ margin: 0 }}>
+              {capture.transcript === "live" ? "Listening. Words appear here as people speak." : "Connecting to transcription…"}
+            </p>
+          )}
         </section>
       )}
     </div>
@@ -232,11 +260,11 @@ function pendingEdits(current: Note | null): Partial<Note> {
   return { title: current.title, myNotes: current.myNotes };
 }
 
-function micLabel(state: string, paused: boolean): string {
+function micLabel(state: string, paused: boolean, transcript: string): string {
   if (paused) return "Paused";
   switch (state) {
     case "live":
-      return "Listening · your Mac’s microphone · no bot";
+      return transcript === "live" ? "Live transcript · your Mac’s microphone · no bot" : "Listening · your Mac’s microphone";
     case "asking":
       return "Asking for the microphone…";
     case "denied":
