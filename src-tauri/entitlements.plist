@@ -14,5 +14,10 @@
       The app is not sandboxed by default: a sandbox is required for the Mac
       App Store and gets in the way for apps distributed as a .dmg.
     -->
+
+    <!-- Memo records meetings: the hardened runtime blocks the microphone
+         without this, even after the user allows it. -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
 </dict>
 </plist>

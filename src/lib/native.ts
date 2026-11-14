@@ -1,20 +1,100 @@
 /**
  * Every call from the UI to Rust goes through this file, so the command
  * surface is visible in one place and argument shapes cannot drift.
+ *
+ * Outside the Tauri window (a browser tab during `npm run dev:web`, and
+ * tests), calls go to a small in-memory stand-in so screens can be designed
+ * and checked without the native side. It is a preview aid, not a second
+ * implementation: the rules live in the core crate.
  */
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
-/** True inside the Tauri window; false in a plain browser tab. */
+import { browserBackend } from "./browserBackend";
+
+export interface Segment {
+  speaker: string;
+  startSecs: number;
+  text: string;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  createdAtMs: number;
+  updatedAtMs: number;
+  durationSecs: number;
+  myNotes: string;
+  transcript: Segment[];
+  enhanced: string | null;
+}
+
+export interface NoteSummary {
+  id: string;
+  title: string;
+  createdAtMs: number;
+  durationSecs: number;
+  snippet: string;
+  speakers: number;
+}
+
+export interface RecordingStatus {
+  noteId: string | null;
+  paused: boolean;
+  elapsedSecs: number;
+}
+
+/** True inside a Tauri window; false in a plain browser tab. */
 export function nativeAvailable(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
+/** Which view this window draws: the app, or the floating mini widget. */
+export function windowView(): "app" | "mini" {
+  if (typeof window === "undefined") return "app";
+  const flagged = (window as { __MEMO_VIEW__?: string }).__MEMO_VIEW__;
+  if (flagged === "mini" || window.location.hash === "#mini") return "mini";
+  return "app";
+}
+
 async function call<T>(command: string, args?: Record<string, unknown>): Promise<T> {
-  if (!nativeAvailable()) {
-    throw new Error("The native side is not running. Start the app with `npm run dev`.");
-  }
+  if (!nativeAvailable()) return browserBackend<T>(command, args);
   return invoke<T>(command, args);
 }
 
-export const greet = (name: string) => call<string>("greet", { name });
+export const listNotes = () => call<NoteSummary[]>("list_notes");
+export const getNote = (id: string) => call<Note>("get_note", { id });
+export const saveNote = (note: Note) => call<Note>("save_note", { note });
+export const deleteNote = (id: string) => call<void>("delete_note", { id });
+export const appendLine = (id: string, line: string) => call<Note>("append_line", { id, line });
+export const noteMarkdown = (id: string) => call<string>("note_markdown", { id });
+
+export const recordingStatus = () => call<RecordingStatus>("recording_status");
+export const startNote = () => call<Note>("start_note");
+export const togglePause = () => call<RecordingStatus>("toggle_pause");
+export const stopNote = () => call<Note>("stop_note");
+
+export const showMain = (noteId?: string) => call<void>("show_main", { noteId: noteId ?? null });
+export const showMini = () => call<void>("show_mini");
+export const hideMini = () => call<void>("hide_mini");
+export const setMiniCollapsed = (collapsed: boolean) =>
+  call<void>("set_mini_collapsed", { collapsed });
+
+/** Recording started, paused or stopped, in any window or the menu bar. */
+export function onRecordingChanged(handler: (status: RecordingStatus) => void): Promise<UnlistenFn> {
+  if (!nativeAvailable()) return browserListen("recording-changed", handler);
+  return listen<RecordingStatus>("recording-changed", (event) => handler(event.payload));
+}
+
+/** The menu bar asked the main window to open a note. */
+export function onOpenNote(handler: (id: string) => void): Promise<UnlistenFn> {
+  if (!nativeAvailable()) return browserListen("open-note", handler);
+  return listen<string>("open-note", (event) => handler(event.payload));
+}
+
+function browserListen<T>(name: string, handler: (payload: T) => void): Promise<UnlistenFn> {
+  const wrapped = (event: Event) => handler((event as CustomEvent<T>).detail);
+  window.addEventListener(`memo:${name}`, wrapped);
+  return Promise.resolve(() => window.removeEventListener(`memo:${name}`, wrapped));
+}
