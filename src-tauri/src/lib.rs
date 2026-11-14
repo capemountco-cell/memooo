@@ -7,7 +7,7 @@
 //! Besides the commands, this file owns what only a native shell can do: the
 //! menu bar icon and its menu, the in-call overlay window, and the ⌘↵ hotkey.
 //!
-//! During a call Memo lives in the overlay: a frosted, translucent panel that
+//! During a call Captain lives in the overlay: a frosted, translucent panel that
 //! floats above every app and is left out of screen shares and recordings.
 //! The main window steps aside, and comes back with the note when the call
 //! ends.
@@ -34,7 +34,7 @@ const OPEN_NOTE_EVENT: &str = "open-note";
 /// Sent to the overlay when ⌘↵ is pressed during a call.
 const ASSIST_EVENT: &str = "assist-hotkey";
 
-/// ⌘↵ asks Memo for help. It is only claimed while a call is being
+/// ⌘↵ asks Captain for help. It is only claimed while a call is being
 /// recorded, so it does not take ⌘↵ from other apps the rest of the time.
 fn assist_shortcut() -> Shortcut {
     Shortcut::new(Some(Modifiers::SUPER), Code::Enter)
@@ -89,9 +89,9 @@ fn refresh_tray(app: &AppHandle, current: &RecordingStatus) {
         });
         let _ = tray.set_title(title);
         let tooltip = if current.note_id.is_some() {
-            "Memo: recording"
+            "Captain: recording"
         } else {
-            "Memo"
+            "Captain"
         };
         let _ = tray.set_tooltip(Some(tooltip));
     }
@@ -275,7 +275,7 @@ fn open_mini(app: &AppHandle) -> tauri::Result<()> {
     // The same frontend, told to draw the overlay instead of the app.
     let mut builder =
         WebviewWindowBuilder::new(app, MINI_LABEL, WebviewUrl::App("index.html".into()))
-            .title("Memo")
+            .title("Captain")
             .initialization_script("window.__MEMO_VIEW__ = 'mini';")
             .inner_size(MINI_EXPANDED.0, MINI_EXPANDED.1)
             .resizable(false)
@@ -307,8 +307,8 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let start = MenuItem::with_id(app, "start", "Start a Note", true, Some("Alt+Cmd+M"))?;
     let stop = MenuItem::with_id(app, "stop", "Stop Recording", true, None::<&str>)?;
     let mini = MenuItem::with_id(app, "mini", "Show Mini Widget", true, None::<&str>)?;
-    let open = MenuItem::with_id(app, "open", "Open Memo", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Memo", true, Some("Cmd+Q"))?;
+    let open = MenuItem::with_id(app, "open", "Open Captain", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Captain", true, Some("Cmd+Q"))?;
     let separator = PredefinedMenuItem::separator(app)?;
     let separator2 = PredefinedMenuItem::separator(app)?;
     let menu = Menu::with_items(
@@ -317,7 +317,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     )?;
 
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
-        .tooltip("Memo")
+        .tooltip("Captain")
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id.as_ref() {

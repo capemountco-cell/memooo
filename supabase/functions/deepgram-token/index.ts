@@ -1,4 +1,4 @@
-// Hands the Memo app a short-lived Deepgram token for one streaming session.
+// Hands the Captain app a short-lived Deepgram token for one streaming session.
 //
 // The Deepgram API key never leaves this function: it lives in the project's
 // Edge Function secrets as DEEPGRAM_API_KEY. The app opens its WebSocket to

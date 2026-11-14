@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { CaptainWordmark } from "../components/CaptainWordmark";
 import { CollapseIcon, ExpandIcon, PauseIcon, PlayIcon } from "../components/Icons";
 import { SpeakerChip } from "../components/SpeakerChip";
 import { Waveform } from "../components/Waveform";
@@ -124,7 +125,7 @@ export function Mini() {
     return (
       <button type="button" className="ov-pill drag" data-tauri-drag-region onClick={() => collapse(false)}>
         {live && <span className="rec-dot" />}
-        <span>{live ? clock(recording.elapsedSecs) : "memo"}</span>
+        {live ? <span>{clock(recording.elapsedSecs)}</span> : <CaptainWordmark height={20} />}
         <Waveform levels={capture.levels} height={18} />
         <span className="ov-pill-expand" aria-label="Expand">
           <ExpandIcon />
@@ -137,7 +138,9 @@ export function Mini() {
     return (
       <div className="ov">
         <div className="ov-head drag" data-tauri-drag-region>
-          <span className="ov-time">memo</span>
+          <span className="ov-time">
+            <CaptainWordmark height={22} />
+          </span>
           <span className="ov-title">Not recording</span>
           <button type="button" className="ov-icon" aria-label="Close" onClick={() => run(hideMini)}>
             ✕
@@ -145,7 +148,7 @@ export function Mini() {
         </div>
         <div className="ov-empty">
           <strong>Ready when your call is</strong>
-          <span>Start a note and Memo listens to both sides, hidden from screen sharing.</span>
+          <span>Start a note and Captain listens to both sides, hidden from screen sharing.</span>
           <button
             type="button"
             className="ov-btn ov-btn-primary"
@@ -245,7 +248,7 @@ export function Mini() {
         }}
       >
         <label className="visually-hidden" htmlFor="ov-input">
-          Ask Memo, or add a note
+          Ask Captain, or add a note
         </label>
         <input
           id="ov-input"

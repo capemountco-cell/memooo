@@ -1,4 +1,4 @@
-//! "Look at my screen": one snapshot of the main display, without Memo's own
+//! "Look at my screen": one snapshot of the main display, without Captain's own
 //! windows in it, as a Base64 PNG for the live-help request.
 
 /// Longest side of the snapshot. Enough to read text, small enough to send fast.
@@ -33,7 +33,7 @@ mod imp {
             .next()
             .ok_or("No display found.")?;
 
-        // Leave Memo's own windows (the overlay) out of the picture.
+        // Leave Captain's own windows (the overlay) out of the picture.
         let own_pid = std::process::id() as i32;
         let apps = content.applications();
         let memo: Vec<&SCRunningApplication> = apps
@@ -79,7 +79,7 @@ mod imp {
     }
 
     fn permission_message() -> String {
-        "Memo can't see the screen yet. Allow it in System Settings › Privacy & Security › \
+        "Captain can't see the screen yet. Allow it in System Settings › Privacy & Security › \
          Screen & System Audio Recording."
             .to_string()
     }

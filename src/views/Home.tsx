@@ -68,7 +68,7 @@ export function Home({ notes, recording, onStart, onOpen }: Props) {
               <div style={{ flex: 1 }}>
                 <h2>Ready when your meeting is</h2>
                 <p>
-                  Start a note, type what matters to you, and Memo keeps time. Or use the Memo icon in the
+                  Start a note, type what matters to you, and Captain keeps time. Or use the Captain icon in the
                   menu bar.
                 </p>
               </div>

@@ -3,8 +3,8 @@
 <plist version="1.0">
 <dict>
     <!-- Merged into the app's Info.plist by the bundler. macOS shows this text
-         when Memo first asks for the microphone. -->
+         when Captain first asks for the microphone. -->
     <key>NSMicrophoneUsageDescription</key>
-    <string>Memo listens to your meetings so it can turn them into notes. Audio stays on this Mac.</string>
+    <string>Captain listens to your meetings so it can turn them into notes. Audio stays on this Mac.</string>
 </dict>
 </plist>

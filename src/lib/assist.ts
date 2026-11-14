@@ -1,4 +1,4 @@
-/** Live help during a call, streamed from Memo's backend as it is written. */
+/** Live help during a call, streamed from Captain's backend as it is written. */
 
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
 import type { Note } from "./native";
@@ -47,7 +47,7 @@ export async function streamAssist(
     });
   } catch (cause) {
     if (signal?.aborted) throw cause;
-    throw new Error("Can't reach Memo's server. Check your internet connection.");
+    throw new Error("Can't reach Captain's server. Check your internet connection.");
   }
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };

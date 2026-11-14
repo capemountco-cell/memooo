@@ -1,4 +1,4 @@
-/** Asking Memo's backend to write up a meeting from the notes and transcript. */
+/** Asking Captain's backend to write up a meeting from the notes and transcript. */
 
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
 import type { Note, Writeup } from "./native";
@@ -12,7 +12,7 @@ export async function requestWriteup(note: Note): Promise<Writeup> {
       body: JSON.stringify({ title: note.title, myNotes: note.myNotes, transcript: note.transcript }),
     });
   } catch {
-    throw new Error("Can't reach Memo's server. Check your internet connection.");
+    throw new Error("Can't reach Captain's server. Check your internet connection.");
   }
   const body = (await response.json().catch(() => ({}))) as { writeup?: Writeup; error?: string };
   if (!response.ok || !body.writeup) {

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Memo",
+  "productName": "Captain",
   "version": "../package.json",
   "identifier": "co.capemount.memo",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Memo",
+        "title": "Captain",
         "width": 1180,
         "height": 760,
         "minWidth": 760,

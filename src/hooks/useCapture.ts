@@ -6,7 +6,7 @@ import type { MicState } from "./useMicLevels";
 
 export type TranscriptState = "off" | "connecting" | "live" | "error";
 
-/** Whether Memo hears the call itself, or only the microphone. */
+/** Whether Captain hears the call itself, or only the microphone. */
 export type CallAudio = "off" | "on" | "unavailable";
 
 interface Capture {
