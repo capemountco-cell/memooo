@@ -738,3 +738,50 @@ button {
 .drag {
   -webkit-app-region: drag;
 }
+
+.transcript-line {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--soft);
+  user-select: text;
+}
+
+.transcript-line strong {
+  flex-shrink: 0;
+  min-width: 76px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.transcript-line.interim span {
+  color: var(--muted);
+}
+
+.transcript-line .stamp {
+  flex-shrink: 0;
+  width: 40px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.transcript summary {
+  cursor: default;
+  margin-bottom: 10px;
+}
+
+.transcript[open] summary {
+  margin-bottom: 14px;
+}
