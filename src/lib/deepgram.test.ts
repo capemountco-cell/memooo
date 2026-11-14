@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { listenUrl, parseMessage, toPcm16 } from "./deepgram";
+import { listenUrl, parseMessage, speakerLabel, toPcm16, toPcm16Stereo } from "./deepgram";
 
 const results = (isFinal: boolean, words: object[], transcript = "x") =>
   JSON.stringify({ type: "Results", is_final: isFinal, channel: { alternatives: [{ transcript, words }] } });
@@ -44,5 +44,35 @@ describe("deepgram", () => {
     expect([pcm.getInt16(0, true), pcm.getInt16(2, true), pcm.getInt16(4, true), pcm.getInt16(6, true)]).toEqual([
       0, 32767, -32768, 32767,
     ]);
+  });
+
+  it("asks for two channels transcribed separately when call audio is on", () => {
+    const url = new URL(listenUrl(48000, 2));
+    expect(url.searchParams.get("channels")).toBe("2");
+    expect(url.searchParams.get("multichannel")).toBe("true");
+    expect(new URL(listenUrl(48000)).searchParams.has("multichannel")).toBe(false);
+  });
+
+  it("labels the microphone as You and numbers the call's voices", () => {
+    expect(speakerLabel(0, 2, 0)).toBe("You");
+    expect(speakerLabel(1, 2, 0)).toBe("Speaker 2");
+    expect(speakerLabel(1, 2, 1)).toBe("Speaker 3");
+    expect(speakerLabel(0, 1, 1)).toBe("Speaker 2");
+    const parsed = JSON.stringify({
+      type: "Results",
+      is_final: true,
+      channel_index: [1, 2],
+      channel: { alternatives: [{ transcript: "hi", words: [{ word: "hi", punctuated_word: "Hi.", start: 0.5, speaker: 0 }] }] },
+    });
+    expect(parseMessage(parsed, 10)).toEqual({
+      kind: "final",
+      segments: [{ speaker: "Speaker 2", startSecs: 10, text: "Hi." }],
+    });
+  });
+
+  it("interleaves microphone and call audio into stereo PCM", () => {
+    const pcm = new DataView(toPcm16Stereo(new Float32Array([1, 0]), new Float32Array([-1, 0.5])));
+    expect(pcm.byteLength).toBe(8);
+    expect([pcm.getInt16(0, true), pcm.getInt16(2, true), pcm.getInt16(6, true)]).toEqual([32767, -32768, 16383]);
   });
 });

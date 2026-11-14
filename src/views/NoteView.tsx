@@ -229,8 +229,11 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
       {live && (
         <section className="transcript-panel" aria-label="Live transcript" aria-live="polite">
           <div className="row">
-            <span className="label">{micLabel(mic, recording.paused, capture.transcript)}</span>
+            <span className="label">{micLabel(mic, recording.paused, capture.transcript, capture.callAudio)}</span>
           </div>
+          {capture.callAudio === "unavailable" && capture.callAudioNote && (
+            <p className="hint" style={{ margin: 0 }}>{capture.callAudioNote}</p>
+          )}
           {capture.error && <p className="hint" style={{ margin: 0, color: "var(--rec-ink)" }}>{capture.error}</p>}
           {capture.lines.map((line, index) => (
             <p key={`${line.startSecs}-${index}`} className="transcript-line">
@@ -260,11 +263,12 @@ function pendingEdits(current: Note | null): Partial<Note> {
   return { title: current.title, myNotes: current.myNotes };
 }
 
-function micLabel(state: string, paused: boolean, transcript: string): string {
+function micLabel(state: string, paused: boolean, transcript: string, callAudio: string): string {
   if (paused) return "Paused";
+  const sources = callAudio === "on" ? "your mic and the call" : "your Mac’s microphone";
   switch (state) {
     case "live":
-      return transcript === "live" ? "Live transcript · your Mac’s microphone · no bot" : "Listening · your Mac’s microphone";
+      return transcript === "live" ? `Live transcript · ${sources} · no bot` : `Listening · ${sources}`;
     case "asking":
       return "Asking for the microphone…";
     case "denied":

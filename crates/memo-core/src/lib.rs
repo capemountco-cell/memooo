@@ -4,6 +4,7 @@
 //! in React. This crate does not depend on Tauri, so it builds and its tests
 //! run on Linux in CI, without a window, a webview or a Mac.
 
+pub mod audio;
 pub mod export;
 pub mod meeting;
 pub mod note;

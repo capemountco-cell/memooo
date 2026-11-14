@@ -7,6 +7,8 @@
 //! Besides the commands, this file owns what only a native shell can do: the
 //! menu bar icon and its menu, and the floating mini widget window.
 
+mod system_audio;
+
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -308,6 +310,7 @@ pub fn run() {
         .setup(|app| {
             let path = app.path().app_data_dir()?.join("notes.json");
             let store = NoteStore::open(path)?;
+            app.manage(system_audio::SystemAudio::default());
             app.manage(AppState {
                 store: Mutex::new(store),
                 recorder: Mutex::new(Recorder::default()),
@@ -332,6 +335,8 @@ pub fn run() {
             show_mini,
             hide_mini,
             set_mini_collapsed,
+            system_audio::start_system_audio,
+            system_audio::stop_system_audio,
         ])
         .run(tauri::generate_context!())
         .expect("failed to start the application");
