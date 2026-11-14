@@ -91,6 +91,11 @@ impl NoteStore {
         notes.into_iter().map(Note::summary).collect()
     }
 
+    /// Every note, in storage order, for searching.
+    pub fn notes(&self) -> &[Note] {
+        &self.notes
+    }
+
     pub fn get(&self, id: &str) -> Result<Note, StoreError> {
         self.notes
             .iter()

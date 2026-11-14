@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { AnswerCard } from "../components/AnswerCard";
 import { CaptainWordmark } from "../components/CaptainWordmark";
 import { CollapseIcon, ExpandIcon, PauseIcon, PlayIcon } from "../components/Icons";
-import { SpeakerChip } from "../components/SpeakerChip";
 import { Waveform } from "../components/Waveform";
 import { useCapture } from "../hooks/useCapture";
+import { lineKey, useLiveAnswers } from "../hooks/useLiveAnswers";
 import { useRecording } from "../hooks/useRecording";
 import { MODE_LABEL, streamAssist, type AssistMode } from "../lib/assist";
 import { clock } from "../lib/format";
+import { speakerTone } from "../lib/speakers";
 import {
   appendLine,
   captureScreen,
@@ -46,6 +48,8 @@ export function Mini() {
   const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
   const capture = useCapture(live && !recording.paused, recording.noteId, recording.elapsedSecs, collapsed ? 12 : 40);
+  const liveAnswers = useLiveAnswers(recording.noteId, capture.lines, recording.elapsedSecs);
+  const convo = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Natively the window is see-through with the desktop blurred behind it.
@@ -119,7 +123,13 @@ export function Mini() {
       else await ask("ask", text);
     });
 
-  const latest = capture.lines[capture.lines.length - 1];
+  // Keep the newest line and its answer in view.
+  useEffect(() => {
+    const el = convo.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [capture.lines, capture.interim, liveAnswers.answers]);
+
+  const recent = capture.lines.slice(-10);
 
   if (collapsed) {
     return (
@@ -169,6 +179,11 @@ export function Mini() {
         <span className="rec-dot" style={recording.paused ? { background: "#b8bdaf" } : undefined} />
         <span className="ov-time">{clock(recording.elapsedSecs)}</span>
         <span className="ov-title">{recording.paused ? "Paused" : title || "Listening"}</span>
+        {liveAnswers.found > 0 && (
+          <span className="ov-count">
+            {liveAnswers.found} {liveAnswers.found === 1 ? "answer" : "answers"}
+          </span>
+        )}
         <button
           type="button"
           className="ov-icon"
@@ -186,19 +201,51 @@ export function Mini() {
         </button>
       </div>
 
-      <div className="ov-live" aria-live="polite">
-        <Waveform levels={capture.levels} height={22} />
-        {capture.interim ? (
-          <p className="ov-line ov-interim">{capture.interim}</p>
-        ) : latest ? (
-          <p className="ov-line">
-            <SpeakerChip name={latest.speaker} />
-            <span>{latest.text}</span>
-          </p>
+      <div className="ov-convo" ref={convo} aria-live="polite">
+        {recent.length === 0 && !capture.interim ? (
+          <div className="ov-convo-empty">
+            <Waveform levels={capture.levels} height={22} />
+            <p className="ov-hint">
+              {capture.transcript === "live" ? "Listening to your mic and the call…" : "Connecting…"} When someone
+              asks a question, the answer and its source appear right under it. Press <kbd>⌘</kbd>
+              <kbd>↵</kbd> any time for help. Nobody else on the call can see this window.
+            </p>
+          </div>
         ) : (
-          <p className="ov-line ov-muted">
-            {capture.transcript === "live" ? "Listening to your mic and the call…" : "Connecting…"}
-          </p>
+          <>
+            {recent.map((line) => {
+              const key = lineKey(line);
+              const found = liveAnswers.answers[key];
+              const mine = speakerTone(line.speaker) === 0;
+              return (
+                <div key={key} className="ov-turn" data-mine={mine}>
+                  <span className="ov-who" data-tone={speakerTone(line.speaker)}>
+                    {line.speaker}
+                    {found && <span className="ov-q">Question</span>}
+                  </span>
+                  <p className="ov-bubble" data-question={Boolean(found)}>
+                    {line.text}
+                  </p>
+                  {found && !liveAnswers.dismissed.has(key) && (
+                    <AnswerCard
+                      answer={found}
+                      onOpenNote={(id) => void run(() => showMain(id))}
+                      onAskAnyway={(question) => {
+                        liveAnswers.dismiss(key);
+                        void ask("ask", question);
+                      }}
+                      onDismiss={() => liveAnswers.dismiss(key)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            {capture.interim && (
+              <div className="ov-turn">
+                <p className="ov-bubble ov-bubble-interim">{capture.interim}</p>
+              </div>
+            )}
+          </>
         )}
         {capture.callAudio === "unavailable" && capture.callAudioNote && (
           <p className="ov-note">{capture.callAudioNote}</p>
@@ -206,27 +253,31 @@ export function Mini() {
         {capture.error && <p className="ov-error">{capture.error}</p>}
       </div>
 
-      <div className="ov-answer">
-        {answer ? (
-          <>
-            <div className="ov-answer-label">
-              {MODE_LABEL[answer.mode]}
-              {answer.question && <span>: {answer.question}</span>}
-              {answer.mode === "screen" && !answer.text && !answer.error && <span> · looking…</span>}
-            </div>
-            {answer.error ? (
-              <p className="ov-error">{answer.error}</p>
-            ) : (
-              <p className="ov-answer-text">{answer.text || (answer.done ? "" : "Thinking…")}</p>
-            )}
-          </>
-        ) : (
-          <p className="ov-hint">
-            Press <kbd>⌘</kbd>
-            <kbd>↵</kbd> any time for help with what’s being said. Nobody else on the call can see this window.
-          </p>
-        )}
-      </div>
+      {answer && (
+        <div className="ov-answer">
+          <div className="ov-answer-label">
+            {MODE_LABEL[answer.mode]}
+            {answer.question && <span>: {answer.question}</span>}
+            {answer.mode === "screen" && !answer.text && !answer.error && <span> · looking…</span>}
+            <button
+              type="button"
+              className="ov-answer-close"
+              aria-label="Close answer"
+              onClick={() => {
+                abort.current?.abort();
+                setAnswer(null);
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          {answer.error ? (
+            <p className="ov-error">{answer.error}</p>
+          ) : (
+            <p className="ov-answer-text">{answer.text || (answer.done ? "" : "Thinking…")}</p>
+          )}
+        </div>
+      )}
 
       <div className="ov-actions">
         <button type="button" className="ov-chip" onClick={() => void ask("assist")}>

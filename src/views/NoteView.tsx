@@ -54,7 +54,8 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
         .then((fresh) => alive && setLiveLines(fresh.transcript.slice(-4)))
         .catch(() => undefined);
     poll();
-    const timer = window.setInterval(poll, 2000);
+    // Reading the note is a local call, so a fast refresh costs nothing.
+    const timer = window.setInterval(poll, 750);
     return () => {
       alive = false;
       window.clearInterval(timer);
