@@ -779,17 +779,33 @@ button {
 
 .transcript-line {
   display: flex;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 14px;
   margin: 0;
+  padding: 10px 0;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--soft);
   user-select: text;
 }
 
+/* A faint rule between turns, so each speaker's line reads on its own. */
+.transcript-line + .transcript-line {
+  border-top: 1px solid var(--line);
+}
+
+.transcript-line .speaker {
+  margin-top: 0;
+}
+
 .transcript-line .who-col {
   flex-shrink: 0;
-  width: 100px;
+  width: 104px;
+}
+
+/* Text starts level with the chip's label. */
+.transcript-line > span:last-child {
+  padding-top: 1px;
 }
 
 .transcript-line.interim span {
@@ -801,25 +817,24 @@ button {
   width: 40px;
   color: var(--muted);
   font-size: 12px;
+  line-height: 24px;
   font-variant-numeric: tabular-nums;
-  padding-top: 2px;
 }
 
 .transcript {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
   padding-top: 18px;
   border-top: 1px solid var(--line);
 }
 
 .transcript summary {
   cursor: default;
-  margin-bottom: 10px;
 }
 
 .transcript[open] summary {
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
 /* ---- Write-up -------------------------------------------------------- */
