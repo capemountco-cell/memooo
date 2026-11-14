@@ -1066,3 +1066,340 @@ button {
 .wordmark .mark circle {
   fill: var(--btn-ink);
 }
+
+/* ---- In-call overlay -------------------------------------------------- */
+/*
+ * The window itself is transparent with macOS's HUD blur behind it, so
+ * these surfaces are tinted glass: olive-charcoal at partial opacity, light
+ * text, hairline edges. It stays dark in light mode too, so it reads over
+ * any call video.
+ */
+
+.ov {
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(34, 38, 31, 0.58);
+  border: 1px solid rgba(244, 239, 233, 0.12);
+  color: #f4efe9;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(24px) saturate(140%);
+}
+
+.ov-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ov-time {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: #c9cdbf;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ov-icon {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(244, 239, 233, 0.1);
+  color: #f4efe9;
+  font-size: 12px;
+}
+
+.ov-icon:hover {
+  background: rgba(244, 239, 233, 0.18);
+}
+
+.ov-stop {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #f4efe9;
+  color: #2a2d27;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ov-stop-square {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: #b5533c;
+}
+
+.ov-live {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(244, 239, 233, 0.07);
+}
+
+.ov-live .waveform {
+  color: #a9b39e;
+}
+
+.ov-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e4e1d9;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ov-line .speaker {
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.ov-interim,
+.ov-muted {
+  color: #b8bdaf;
+}
+
+.ov-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d9c9a0;
+}
+
+.ov-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #f0b3a1;
+}
+
+.ov-answer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 2px 0;
+  user-select: text;
+}
+
+.ov-answer-label {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a9b39e;
+}
+
+.ov-answer-label span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: #c9cdbf;
+}
+
+.ov-answer-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.ov-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #b8bdaf;
+}
+
+.ov-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin: 0 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(244, 239, 233, 0.25);
+  font: 600 11px inherit;
+  color: #f4efe9;
+}
+
+.ov-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ov-chip {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(244, 239, 233, 0.16);
+  border-radius: 999px;
+  background: rgba(244, 239, 233, 0.06);
+  color: #f4efe9;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ov-chip:hover {
+  background: rgba(169, 179, 158, 0.22);
+  border-color: rgba(169, 179, 158, 0.5);
+}
+
+.ov-composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(20, 23, 18, 0.45);
+  border: 1px solid rgba(244, 239, 233, 0.12);
+}
+
+.ov-composer input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #f4efe9;
+  font-size: 14px;
+  user-select: text;
+}
+
+.ov-composer input::placeholder {
+  color: #9da293;
+}
+
+.ov-composer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ov-btn {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid rgba(244, 239, 233, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: #e4e1d9;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ov-btn:disabled {
+  opacity: 0.4;
+}
+
+.ov-btn-primary {
+  height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: #f4efe9;
+  color: #2a2d27;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+.ov-send {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: #a9b39e;
+  color: #1f241c;
+}
+
+.ov-send:disabled {
+  opacity: 0.45;
+}
+
+.ov-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c9cdbf;
+}
+
+.ov-empty strong {
+  font-size: 17px;
+  color: #f4efe9;
+}
+
+.ov-pill {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 0 16px;
+  border: 1px solid rgba(244, 239, 233, 0.14);
+  border-radius: 999px;
+  background: rgba(34, 38, 31, 0.62);
+  color: #f4efe9;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+
+.ov-pill .waveform {
+  color: #a9b39e;
+}
+
+.ov-pill-expand {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(244, 239, 233, 0.12);
+}
