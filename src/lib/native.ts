@@ -111,6 +111,15 @@ export async function startSystemAudio(onSamples: (samples: Float32Array) => voi
 
 export const stopSystemAudio = () => (nativeAvailable() ? invoke<void>("stop_system_audio") : Promise.resolve());
 
+/** A snapshot of the screen (Memo's own windows left out) as Base64 PNG. */
+export const captureScreen = () => call<string>("capture_screen");
+
+/** ⌘↵ was pressed during a call. */
+export function onAssistHotkey(handler: () => void): Promise<UnlistenFn> {
+  if (!nativeAvailable()) return browserListen("assist-hotkey", handler);
+  return listen("assist-hotkey", () => handler());
+}
+
 /** Recording started, paused or stopped, in any window or the menu bar. */
 export function onRecordingChanged(handler: (status: RecordingStatus) => void): Promise<UnlistenFn> {
   if (!nativeAvailable()) return browserListen("recording-changed", handler);

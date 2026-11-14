@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { BackIcon, PauseIcon, PlayIcon, PopOutIcon } from "../components/Icons";
 import { SpeakerChip } from "../components/SpeakerChip";
-import { Waveform } from "../components/Waveform";
-import { useCapture } from "../hooks/useCapture";
 import { clock, dayLabel, length } from "../lib/format";
 import {
   deleteNote,
@@ -44,8 +42,23 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
   const timer = useRef<number | undefined>(undefined);
 
   const live = recording.noteId === id;
-  const capture = useCapture(live && !recording.paused, live ? id : null, recording.elapsedSecs, 28);
-  const { levels, mic } = capture;
+  // Capture runs in the overlay during a call; here the transcript is read
+  // back from the saved note as it grows.
+  const [liveLines, setLiveLines] = useState<Note["transcript"]>([]);
+  useEffect(() => {
+    if (!live) return;
+    let alive = true;
+    const poll = () =>
+      getNote(id)
+        .then((fresh) => alive && setLiveLines(fresh.transcript.slice(-4)))
+        .catch(() => undefined);
+    poll();
+    const timer = window.setInterval(poll, 2000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [live, id]);
 
   useEffect(() => {
     setNote(null);
@@ -168,7 +181,6 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
               <div className="rec-pill" data-paused={recording.paused}>
                 <span className="rec-dot" />
                 <span className="time">{clock(recording.elapsedSecs)}</span>
-                <Waveform levels={levels} height={18} />
                 <button
                   type="button"
                   className="icon-btn"
@@ -179,7 +191,7 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
                   {recording.paused ? <PlayIcon /> : <PauseIcon />}
                 </button>
               </div>
-              <button type="button" className="icon-btn" aria-label="Pop out mini widget" onClick={() => run(showMini)}>
+              <button type="button" className="icon-btn" aria-label="Show the overlay" onClick={() => run(showMini)}>
                 <PopOutIcon />
               </button>
               <button type="button" className="btn btn-primary" onClick={() => run(stopNote)}>
@@ -291,31 +303,21 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
       {live && (
         <section className="transcript-panel" aria-label="Live transcript" aria-live="polite">
           <div className="row">
-            <span className="label">{micLabel(mic, recording.paused, capture.transcript, capture.callAudio)}</span>
+            <span className="label">
+              {recording.paused ? "Paused" : "Live transcript · in the overlay · hidden from screen sharing"}
+            </span>
           </div>
-          {capture.callAudio === "unavailable" && capture.callAudioNote && (
-            <p className="hint" style={{ margin: 0 }}>{capture.callAudioNote}</p>
-          )}
-          {capture.error && <p className="hint" style={{ margin: 0, color: "var(--rec-ink)" }}>{capture.error}</p>}
-          {capture.lines.map((line, index) => (
+          {liveLines.map((line, index) => (
             <p key={`${line.startSecs}-${index}`} className="transcript-line">
               <span className="who-col">
-                    <SpeakerChip name={line.speaker} />
-                  </span>
+                <SpeakerChip name={line.speaker} />
+              </span>
               <span>{line.text}</span>
             </p>
           ))}
-          {capture.interim && (
-            <p className="transcript-line interim">
-              <span className="speaker" data-tone="0" aria-hidden>
-                …
-              </span>
-              <span>{capture.interim}</span>
-            </p>
-          )}
-          {!capture.error && capture.lines.length === 0 && !capture.interim && (
+          {liveLines.length === 0 && (
             <p className="hint" style={{ margin: 0 }}>
-              {capture.transcript === "live" ? "Listening. Words appear here as people speak." : "Connecting to transcription…"}
+              Words appear here as people speak. Ask Memo for help from the overlay or with ⌘↵.
             </p>
           )}
         </section>
@@ -366,21 +368,4 @@ function WriteupView({ writeup }: { writeup: Writeup }) {
       </p>
     </div>
   );
-}
-
-function micLabel(state: string, paused: boolean, transcript: string, callAudio: string): string {
-  if (paused) return "Paused";
-  const sources = callAudio === "on" ? "your mic and the call" : "your Mac’s microphone";
-  switch (state) {
-    case "live":
-      return transcript === "live" ? `Live transcript · ${sources} · no bot` : `Listening · ${sources}`;
-    case "asking":
-      return "Asking for the microphone…";
-    case "denied":
-      return "Microphone blocked: allow Memo in System Settings › Privacy";
-    case "unavailable":
-      return "No microphone found";
-    default:
-      return "Recording";
-  }
 }

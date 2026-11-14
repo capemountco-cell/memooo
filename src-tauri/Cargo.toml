@@ -17,11 +17,14 @@ tauri-build = { version = "2", features = [] }
 memo-core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
+tauri-plugin-global-shortcut = "2"
 
-# Captures system audio (the other side of a call). macOS only.
+# System audio (the other side of a call) and screen snapshots. macOS only.
+# macos_14_0 enables the screenshot API; Memo checks the version before use.
 [target.'cfg(target_os = "macos")'.dependencies]
-screencapturekit = "11.1.2"
+screencapturekit = { version = "11.1.2", features = ["macos_14_0"] }
+png = "0.18"
 
 [features]
 # Turned on by `tauri build`. Serves the bundled frontend instead of devUrl.

@@ -26,7 +26,8 @@
     ],
     "security": {
       "csp": "default-src 'self'; img-src 'self' data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; media-src 'self' mediastream: blob:; connect-src 'self' ipc: http://ipc.localhost https://owmjaetntlnugtaelvkr.supabase.co wss://api.deepgram.com"
-    }
+    },
+    "macOSPrivateApi": true
   },
   "bundle": {
     "active": true,

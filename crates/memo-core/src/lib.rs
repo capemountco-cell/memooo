@@ -9,6 +9,7 @@ pub mod export;
 pub mod meeting;
 pub mod note;
 pub mod recording;
+pub mod screen;
 pub mod store;
 pub mod writeup;
 

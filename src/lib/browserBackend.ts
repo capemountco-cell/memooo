@@ -184,6 +184,8 @@ export async function browserBackend<T>(command: string, args: Record<string, un
       case "show_main":
         if (args.noteId) emit("open-note", args.noteId);
         return undefined;
+      case "capture_screen":
+        throw new Error("Looking at the screen works in the Mac app.");
       case "show_mini":
       case "hide_mini":
       case "set_mini_collapsed":
