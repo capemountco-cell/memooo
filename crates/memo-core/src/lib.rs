@@ -10,6 +10,7 @@ pub mod meeting;
 pub mod note;
 pub mod recording;
 pub mod store;
+pub mod writeup;
 
 pub use note::{Note, NoteSummary, Segment};
 pub use recording::{clock, Recorder, RecordingError, RecordingStatus};

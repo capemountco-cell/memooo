@@ -19,6 +19,18 @@ export interface Segment {
   text: string;
 }
 
+export interface WriteupPoint {
+  text: string;
+  /** The user's own note, as opposed to something Memo added. */
+  fromYou: boolean;
+}
+
+export interface Writeup {
+  title: string;
+  sections: { heading: string; points: WriteupPoint[] }[];
+  actionItems: { task: string; owner: string; due: string }[];
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -28,6 +40,7 @@ export interface Note {
   myNotes: string;
   transcript: Segment[];
   enhanced: string | null;
+  writeup: Writeup | null;
 }
 
 export interface NoteSummary {
@@ -70,6 +83,7 @@ export const deleteNote = (id: string) => call<void>("delete_note", { id });
 export const appendLine = (id: string, line: string) => call<Note>("append_line", { id, line });
 export const appendSegments = (id: string, segments: Segment[]) =>
   call<Note>("append_segments", { id, segments });
+export const saveWriteup = (id: string, writeup: Writeup) => call<Note>("save_writeup", { id, writeup });
 export const noteMarkdown = (id: string) => call<string>("note_markdown", { id });
 
 export const recordingStatus = () => call<RecordingStatus>("recording_status");

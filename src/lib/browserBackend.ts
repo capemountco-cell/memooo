@@ -54,6 +54,7 @@ function create(): Note {
     myNotes: "",
     transcript: [],
     enhanced: null,
+    writeup: null,
   };
   notes.set(note.id, note);
   return note;
@@ -90,6 +91,16 @@ export async function browserBackend<T>(command: string, args: Record<string, un
         for (const segment of args.segments as Note["transcript"]) {
           if (segment.text.trim()) note.transcript.push({ ...segment, text: segment.text.trim() });
         }
+        return note;
+      }
+      case "save_writeup": {
+        const note = get(id);
+        const writeup = args.writeup as NonNullable<Note["writeup"]>;
+        note.writeup = writeup;
+        note.enhanced = writeup.sections
+          .map((section) => `### ${section.heading}\n${section.points.map((p) => `- ${p.text}`).join("\n")}`)
+          .join("\n\n");
+        if (note.title === "Untitled meeting" && writeup.title) note.title = writeup.title;
         return note;
       }
       case "note_markdown": {

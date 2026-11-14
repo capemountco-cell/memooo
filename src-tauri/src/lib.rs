@@ -118,6 +118,15 @@ fn append_segments(
 }
 
 #[tauri::command]
+fn save_writeup(
+    state: State<AppState>,
+    id: String,
+    writeup: memo_core::writeup::Writeup,
+) -> CommandResult<Note> {
+    memo_core::writeup::save_writeup(&mut lock(&state.store), &id, writeup, now_ms()).map_err(text)
+}
+
+#[tauri::command]
 fn note_markdown(state: State<AppState>, id: String) -> CommandResult<String> {
     let note = lock(&state.store).get(&id).map_err(text)?;
     Ok(memo_core::export::to_markdown(&note))
@@ -326,6 +335,7 @@ pub fn run() {
             delete_note,
             append_line,
             append_segments,
+            save_writeup,
             note_markdown,
             recording_status,
             start_note,

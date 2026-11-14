@@ -32,9 +32,12 @@ pub struct Note {
     pub my_notes: String,
     #[serde(default)]
     pub transcript: Vec<Segment>,
-    /// The written-up version, once Memo has merged notes and transcript.
+    /// The written-up version as Markdown, once Memo has merged notes and transcript.
     #[serde(default)]
     pub enhanced: Option<String>,
+    /// The same write-up with its structure: which points are the user's.
+    #[serde(default)]
+    pub writeup: Option<crate::writeup::Writeup>,
 }
 
 /// The light version of a note for lists: no transcript, no full text.
@@ -64,6 +67,7 @@ impl Note {
             my_notes: String::new(),
             transcript: Vec::new(),
             enhanced: None,
+            writeup: None,
         }
     }
 
