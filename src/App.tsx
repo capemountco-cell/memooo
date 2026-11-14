@@ -1,35 +1,56 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import Recorder from "./pages/Recorder";
-import Summary from "./pages/Summary";
-import SharedSession from "./pages/SharedSession";
-import PinProtectedSession from "./pages/PinProtectedSession";
-import NotFound from "./pages/NotFound";
+import { useState } from "react";
 
-const queryClient = new QueryClient();
+import { greet, nativeAvailable } from "./lib/native";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner duration={1000} richColors closeButton={false} position="top-center" />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/recorder" element={<Recorder />} />
-          <Route path="/summary/:id" element={<Summary />} />
-          <Route path="/s/:id" element={<PinProtectedSession />} />
-          <Route path="/s/:slug" element={<SharedSession />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+/**
+ * The starting screen. Replace it.
+ *
+ * It exists to prove the whole chain works on a new machine: React renders,
+ * the button calls a Rust command, and Rust answers from the core crate.
+ */
+export function App() {
+  const [name, setName] = useState("");
+  const [reply, setReply] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default App;
+  const ask = async () => {
+    setError(null);
+    try {
+      setReply(await greet(name));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
+  return (
+    <main className="app">
+      <h1>Memo</h1>
+      <p className="muted">
+        {nativeAvailable()
+          ? "Running inside the native window."
+          : "Running in a browser tab. Start the app with npm run dev to reach Rust."}
+      </p>
+      <form
+        className="row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void ask();
+        }}
+      >
+        <label className="visually-hidden" htmlFor="name">
+          Your name
+        </label>
+        <input
+          id="name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Your name"
+          autoComplete="off"
+        />
+        <button type="submit">Say hello</button>
+      </form>
+      {reply && <p>{reply}</p>}
+      {error && <p className="error">{error}</p>}
+    </main>
+  );
+}

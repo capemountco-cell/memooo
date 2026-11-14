@@ -1,9 +1,14 @@
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
-import "./index.css";
-import { ensureAnonAuth } from "./lib/anonAuth";
 
-// Bootstrap anonymous auth before rendering
-ensureAnonAuth();
+import { App } from "./App";
+import "./styles.css";
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = document.getElementById("root");
+if (!root) throw new Error("No #root element in index.html.");
+
+createRoot(root).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
