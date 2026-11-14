@@ -1,12 +1,14 @@
 // Turns a meeting's rough notes and transcript into Captain's write-up.
 //
-// Claude merges what the user typed with what was said: the user's own points
-// are kept (lightly tidied) and flagged, Captain adds what they missed, and
-// action items come out with owners and dates. The Anthropic API key stays
-// in this function's secrets as ANTHROPIC_API_KEY.
+// An OpenAI model merges what the user typed with what was said: the user's
+// own points are kept (lightly tidied) and flagged, Captain adds what they
+// missed, and action items come out with owners and dates. The OpenAI API key
+// stays in this function's secrets as OPENAI_API_KEY; OPENAI_MODEL may name a
+// different model than the default.
 
-import Anthropic from "npm:@anthropic-ai/sdk@1.8.0";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+
+const MODEL = Deno.env.get("OPENAI_MODEL") || "gpt-5";
 
 const MAX_PER_HOUR = 30;
 /** Roughly three hours of conversation. Longer input is refused, never cut. */
@@ -97,8 +99,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   if (req.method !== "POST") return reply(405, { error: "Use POST." });
 
-  if (!Deno.env.get("ANTHROPIC_API_KEY")) {
-    return reply(503, { error: "Write-ups are not set up yet: ANTHROPIC_API_KEY is missing." });
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) {
+    return reply(503, { error: "Write-ups are not set up yet: OPENAI_API_KEY is missing." });
   }
 
   let input: { title?: string; myNotes?: string; transcript?: Segment[] };
@@ -139,51 +142,52 @@ Deno.serve(async (req) => {
     `<transcript>\n${conversation || "(no transcript)"}\n</transcript>`,
   ].join("\n\n");
 
-  const client = new Anthropic();
+  let response: Response;
   try {
-    const stream = client.beta.messages.stream({
-      model: "claude-opus-5-5",
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      // If Claude Opus 5.5 declines, the API retries on a suitable model.
-      fallbacks: "default",
-      system: SYSTEM,
-      output_config: {
-        effort: "medium",
-        format: { type: "json_schema", schema: SCHEMA },
-      },
-      messages: [{ role: "user", content: userContent }],
+    response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        reasoning_effort: "medium",
+        max_completion_tokens: 16000,
+        response_format: { type: "json_schema", json_schema: { name: "writeup", strict: true, schema: SCHEMA } },
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: userContent },
+        ],
+      }),
     });
-    const message = await stream.finalMessage();
+  } catch (error) {
+    console.error("Could not reach OpenAI", error);
+    return reply(502, { error: "Couldn't reach the write-up service. Try again." });
+  }
 
-    if (message.stop_reason === "refusal") {
+  if (!response.ok) {
+    const detail = await response.text();
+    console.error("OpenAI error", response.status, detail.slice(0, 500));
+    if (response.status === 401) {
+      return reply(503, { error: "Write-ups are misconfigured: the OpenAI API key was rejected." });
+    }
+    if (response.status === 429) {
+      return reply(429, { error: "Captain is busy right now (or the OpenAI account is out of credit). Try again in a minute." });
+    }
+    return reply(502, { error: `The write-up service failed (${response.status}). Try again.` });
+  }
+
+  try {
+    const data = await response.json();
+    const choice = data.choices?.[0];
+    if (choice?.message?.refusal) {
       return reply(422, { error: "This meeting couldn't be written up." });
     }
-    if (message.stop_reason === "max_tokens") {
+    if (choice?.finish_reason === "length") {
       return reply(500, { error: "The write-up was too long to finish. Try again." });
     }
-    const text = message.content
-      .map((block) => (block.type === "text" ? block.text : ""))
-      .join("");
-    const writeup = JSON.parse(text);
+    const writeup = JSON.parse(choice?.message?.content ?? "");
     return reply(200, { writeup });
   } catch (error) {
-    if (error instanceof Anthropic.RateLimitError) {
-      return reply(429, { error: "Captain is busy right now. Try again in a minute." });
-    }
-    if (error instanceof Anthropic.AuthenticationError) {
-      console.error("Anthropic rejected the API key");
-      return reply(503, { error: "Write-ups are misconfigured: the API key was rejected." });
-    }
-    if (error instanceof Anthropic.APIError) {
-      console.error("Anthropic API error", error.status, error.message);
-      return reply(502, { error: `The write-up service failed (${error.status}). Try again.` });
-    }
-    if (error instanceof SyntaxError) {
-      console.error("Write-up was not valid JSON");
-      return reply(502, { error: "The write-up came back garbled. Try again." });
-    }
-    console.error("Write-up failed", error);
-    return reply(500, { error: "The write-up failed. Try again." });
+    console.error("Write-up was not valid JSON", error);
+    return reply(502, { error: "The write-up came back garbled. Try again." });
   }
 });

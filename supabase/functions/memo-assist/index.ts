@@ -1,12 +1,14 @@
 // Live help during a meeting: "Assist", "What should I say?", a typed
 // question, or a question about what is on the user's screen.
 //
-// Claude reads the recent transcript (and the user's notes, and a screenshot
+// An OpenAI model reads the recent transcript (and the user's notes, and a screenshot
 // when given) and the answer streams back as plain text, so it starts
 // appearing in Captain's overlay within a second or two.
 
-import Anthropic from "npm:@anthropic-ai/sdk@1.8.0";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+
+/** OPENAI_MODEL in the function's secrets overrides the default. */
+const MODEL = Deno.env.get("OPENAI_MODEL") || "gpt-5";
 
 const MAX_PER_HOUR = 120;
 /** About twenty minutes of talk; older lines are dropped by the app first. */
@@ -63,8 +65,9 @@ function transcriptText(segments: Segment[]): string {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   if (req.method !== "POST") return reply(405, { error: "Use POST." });
-  if (!Deno.env.get("ANTHROPIC_API_KEY")) {
-    return reply(503, { error: "Live help is not set up yet: ANTHROPIC_API_KEY is missing." });
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) {
+    return reply(503, { error: "Live help is not set up yet: OPENAI_API_KEY is missing." });
   }
 
   let input: { mode?: Mode; question?: string; myNotes?: string; transcript?: Segment[]; screenshot?: string };
@@ -108,49 +111,74 @@ Deno.serve(async (req) => {
     .filter(Boolean)
     .join("\n\n");
 
-  const client = new Anthropic();
   const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        const stream = client.beta.messages.stream({
-          model: "claude-opus-5-5",
-          max_tokens: 4000,
-          betas: ["server-side-fallback-2026-07-01"],
-          fallbacks: "default",
-          system: SYSTEM,
-          // Speed matters more than depth when someone is mid-sentence.
-          output_config: { effort: "low" },
-          messages: [
-            {
-              role: "user",
-              content: screenshot
-                ? [
-                    { type: "image", source: { type: "base64", media_type: "image/png", data: screenshot } },
-                    { type: "text", text },
-                  ]
-                : [{ type: "text", text }],
-            },
-          ],
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: MODEL,
+            stream: true,
+            // Speed matters more than depth when someone is mid-sentence.
+            reasoning_effort: "low",
+            max_completion_tokens: 4000,
+            messages: [
+              { role: "system", content: SYSTEM },
+              {
+                role: "user",
+                content: screenshot
+                  ? [
+                      { type: "image_url", image_url: { url: `data:image/png;base64,${screenshot}` } },
+                      { type: "text", text },
+                    ]
+                  : text,
+              },
+            ],
+          }),
         });
-        for await (const event of stream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            controller.enqueue(encoder.encode(event.delta.text));
+        if (!response.ok || !response.body) {
+          const detail = await response.text();
+          console.error("OpenAI error", response.status, detail.slice(0, 500));
+          const reason =
+            response.status === 401
+              ? "Live help is misconfigured: the OpenAI API key was rejected."
+              : response.status === 429
+                ? "Captain is busy right now (or the OpenAI account is out of credit). Try again in a moment."
+                : `Live help failed (${response.status}). Try again.`;
+          controller.enqueue(encoder.encode(`(${reason})`));
+          return;
+        }
+        // Server-sent events: one "data: {json}" line per chunk, then "data: [DONE]".
+        const reader = response.body.getReader();
+        let buffer = "";
+        let refused = false;
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() ?? "";
+          for (const line of lines) {
+            const payload = line.trim();
+            if (!payload.startsWith("data:")) continue;
+            const json = payload.slice(5).trim();
+            if (json === "[DONE]") continue;
+            try {
+              const delta = JSON.parse(json).choices?.[0]?.delta;
+              if (delta?.content) controller.enqueue(encoder.encode(delta.content));
+              if (delta?.refusal) refused = true;
+            } catch {
+              // A partial line; the rest arrives in the next chunk.
+            }
           }
         }
-        const message = await stream.finalMessage();
-        if (message.stop_reason === "refusal") {
-          controller.enqueue(encoder.encode("\n\n(Captain can't help with that one.)"));
-        }
+        if (refused) controller.enqueue(encoder.encode("\n\n(Captain can't help with that one.)"));
       } catch (error) {
-        const reason =
-          error instanceof Anthropic.RateLimitError
-            ? "Captain is busy right now. Try again in a moment."
-            : error instanceof Anthropic.APIError
-              ? `Live help failed (${error.status}). Try again.`
-              : "Live help failed. Try again.";
         console.error("Assist failed", error);
-        controller.enqueue(encoder.encode(`\n\n(${reason})`));
+        controller.enqueue(encoder.encode("\n\n(Live help failed. Try again.)"));
       } finally {
         controller.close();
       }
