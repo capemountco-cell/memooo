@@ -35,6 +35,7 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"mine" | "written">("mine");
   const [copied, setCopied] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [writing, setWriting] = useState(false);
   const [writeError, setWriteError] = useState<string | null>(null);
   const wasLive = useRef(false);
@@ -149,9 +150,11 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
       window.setTimeout(() => setCopied(false), 1600);
     });
 
+  // The confirm step lives in the page: the Mac app's web view has no
+  // window.confirm (it returns false without showing anything).
   const remove = () =>
     run(async () => {
-      if (!window.confirm("Delete this note? This can't be undone.")) return;
+      setConfirmingDelete(false);
       await deleteNote(id);
       onDeleted();
     });
@@ -200,9 +203,21 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
             </>
           ) : (
             <>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={remove}>
-                Delete
-              </button>
+              {confirmingDelete ? (
+                <div className="confirm-delete" role="group" aria-label="Delete this note?">
+                  <span>Delete for good?</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmingDelete(false)}>
+                    Cancel
+                  </button>
+                  <button type="button" className="btn btn-danger btn-sm" autoFocus onClick={remove}>
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmingDelete(true)}>
+                  Delete
+                </button>
+              )}
               <button type="button" className="btn btn-secondary" onClick={copy}>
                 {copied ? "Copied" : "Copy as Markdown"}
               </button>

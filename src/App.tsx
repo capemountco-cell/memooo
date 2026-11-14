@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 
 import { HomeIcon } from "./components/Icons";
 import { useRecording } from "./hooks/useRecording";
-import { listNotes, onOpenNote, startNote, type NoteSummary } from "./lib/native";
+import { NoteMenu, type NoteMenuTarget } from "./components/NoteMenu";
+import { deleteNote, listNotes, onOpenNote, startNote, type NoteSummary } from "./lib/native";
 import { Home } from "./views/Home";
 import { NoteView } from "./views/NoteView";
 import { CaptainWordmark } from "./components/CaptainWordmark";
@@ -15,6 +16,7 @@ export function App() {
   const [route, setRoute] = useState<Route>({ name: "home" });
   const [notes, setNotes] = useState<NoteSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [menu, setMenu] = useState<NoteMenuTarget | null>(null);
 
   const refresh = useCallback(() => {
     listNotes()
@@ -44,6 +46,22 @@ export function App() {
   };
 
   const open = (id: string) => setRoute({ name: "note", id });
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const showMenu = (id: string) => (event: MouseEvent) => {
+    event.preventDefault();
+    setMenu({ id, x: event.clientX, y: event.clientY });
+  };
+  const remove = async (id: string) => {
+    setMenu(null);
+    setError(null);
+    try {
+      await deleteNote(id);
+      if (route.name === "note" && route.id === id) setRoute({ name: "home" });
+      refresh();
+    } catch (cause) {
+      setError(String(cause));
+    }
+  };
   const home = () => {
     refresh();
     setRoute({ name: "home" });
@@ -76,6 +94,7 @@ export function App() {
                 className="nav-item"
                 aria-current={route.name === "note" && route.id === note.id ? "page" : undefined}
                 onClick={() => open(note.id)}
+                onContextMenu={showMenu(note.id)}
               >
                 {note.id === recording.noteId && <span className="rec-dot" />}
                 <span className="nav-title">{note.title}</span>
@@ -86,7 +105,7 @@ export function App() {
       </aside>
 
       {route.name === "home" ? (
-        <Home notes={notes} recording={recording} onStart={start} onOpen={open} />
+        <Home notes={notes} recording={recording} onStart={start} onOpen={open} onMenu={showMenu} />
       ) : (
         <NoteView
           key={route.id}
@@ -95,6 +114,19 @@ export function App() {
           onBack={home}
           onChanged={refresh}
           onDeleted={home}
+        />
+      )}
+
+      {menu && (
+        <NoteMenu
+          target={menu}
+          recording={menu.id === recording.noteId}
+          onOpen={(id) => {
+            setMenu(null);
+            open(id);
+          }}
+          onDelete={(id) => void remove(id)}
+          onClose={closeMenu}
         />
       )}
 
