@@ -1,51 +1,56 @@
 /*
- * Memo's look: off-white paper, black ink, warm grey fills, charcoal at night.
- * Soft corners throughout. Red appears only while recording.
+ * Memo's look: linen paper, sage green, olive charcoal at night. Sora type,
+ * soft corners. Sage is the app's voice (marks, active states, the
+ * waveform); a deeper sage carries button text. Ember appears only while
+ * recording.
  */
 
 :root {
   color-scheme: light dark;
-  font-family: "Figtree Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: "Sora Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 
-  --bg: #fbfaf8;
-  --side: #f1f0ed;
-  --card: #ffffff;
-  --stone: #e8e6e1;
-  --stone-hover: #dfdcd6;
-  --line: #e2e0db;
-  --ink: #1f1f1f;
-  --soft: #3d3c39;
-  --muted: #5f5e5a;
-  --btn: #000000;
-  --btn-ink: #ffffff;
-  --rec: #c2402a;
-  --rec-dot: #e0634b;
-  --rec-tint: #f6e4df;
-  --rec-ink: #8e2b1a;
-  --shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --bg: #f4efe9;
+  --side: #ece6dd;
+  --card: #fbf9f6;
+  --stone: #e7e1d8;
+  --stone-hover: #ddd6cb;
+  --line: #e2dbd0;
+  --ink: #2a2d27;
+  --soft: #474a42;
+  --muted: #62635a;
+  --brand: #798470;
+  --brand-tint: #e3e7dc;
+  --brand-ink: #3d4636;
+  --btn: #5b6652;
+  --btn-ink: #fbf9f6;
+  --rec: #b5533c;
+  --rec-dot: #e08a72;
+  --rec-tint: #f3e2db;
+  --rec-ink: #8a3a26;
+  --shadow: 0 12px 32px rgba(42, 45, 39, 0.08);
 
   /* Speaker tones: a soft tint with a darker ink of the same hue (4.5:1+). */
-  --sp0-bg: #e8e6e1;
-  --sp0-ink: #1f1f1f;
-  --sp0-dot: #8a8780;
+  --sp0-bg: #e3e7dc;
+  --sp0-ink: #3d4636;
+  --sp0-dot: #798470;
   --sp1-bg: #f3e6de;
   --sp1-ink: #7a4329;
   --sp1-dot: #b5714f;
-  --sp2-bg: #e4ece1;
-  --sp2-ink: #3f5e3b;
-  --sp2-dot: #6f8f6a;
-  --sp3-bg: #e2e9f1;
-  --sp3-ink: #34506e;
-  --sp3-dot: #5f7fa3;
-  --sp4-bg: #ece3ee;
-  --sp4-ink: #5e4366;
-  --sp4-dot: #8c6a93;
-  --sp5-bg: #f1ebd9;
-  --sp5-ink: #6b5420;
-  --sp5-dot: #a88a3e;
+  --sp2-bg: #e2e9f1;
+  --sp2-ink: #34506e;
+  --sp2-dot: #5f7fa3;
+  --sp3-bg: #ece3ee;
+  --sp3-ink: #5e4366;
+  --sp3-dot: #8c6a93;
+  --sp4-bg: #f1ebd9;
+  --sp4-ink: #6b5420;
+  --sp4-dot: #a88a3e;
+  --sp5-bg: #e0ebe9;
+  --sp5-ink: #2f5a55;
+  --sp5-dot: #5e938c;
 
   --r-sm: 8px;
   --r-btn: 10px;
@@ -55,38 +60,41 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #262626;
-    --side: #1f1f1f;
-    --card: #2f2f2f;
-    --stone: #3a3936;
-    --stone-hover: #44433f;
-    --line: #3a3a3a;
-    --ink: #f2f1ee;
-    --soft: #d4d3cf;
-    --muted: #a8a7a2;
-    --btn: #f2f1ee;
-    --btn-ink: #111111;
-    --rec-tint: #4a2a23;
-    --sp0-bg: #3a3936;
-    --sp0-ink: #f2f1ee;
-    --sp0-dot: #a8a7a2;
+    --bg: #22261f;
+    --side: #1b1e18;
+    --card: #2a2e26;
+    --stone: #353a30;
+    --stone-hover: #3f453a;
+    --line: #373c32;
+    --ink: #f1eee8;
+    --soft: #d3d2c9;
+    --muted: #a9ab9f;
+    --brand: #a9b39e;
+    --brand-tint: #34402f;
+    --brand-ink: #cfd8c4;
+    --btn: #a9b39e;
+    --btn-ink: #1f241c;
+    --rec-tint: #4a2c23;
+    --rec-ink: #f0b3a1;
+    --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    --sp0-bg: #34402f;
+    --sp0-ink: #cfd8c4;
+    --sp0-dot: #a9b39e;
     --sp1-bg: #46322a;
     --sp1-ink: #f0c9b4;
     --sp1-dot: #d08a66;
-    --sp2-bg: #2f3d2e;
-    --sp2-ink: #c3dcbd;
-    --sp2-dot: #8fb488;
-    --sp3-bg: #2c3744;
-    --sp3-ink: #bfd2e8;
-    --sp3-dot: #85a5c9;
-    --sp4-bg: #3b2f3e;
-    --sp4-ink: #e0c9e6;
-    --sp4-dot: #b08bb8;
-    --sp5-bg: #403823;
-    --sp5-ink: #e6d4a4;
-    --sp5-dot: #c9a957;
-    --rec-ink: #f0a898;
-    --shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    --sp2-bg: #2c3744;
+    --sp2-ink: #bfd2e8;
+    --sp2-dot: #85a5c9;
+    --sp3-bg: #3b2f3e;
+    --sp3-ink: #e0c9e6;
+    --sp3-dot: #b08bb8;
+    --sp4-bg: #403823;
+    --sp4-ink: #e6d4a4;
+    --sp4-dot: #c9a957;
+    --sp5-bg: #263b38;
+    --sp5-ink: #bfe0db;
+    --sp5-dot: #7fb8b0;
   }
 }
 
@@ -254,10 +262,18 @@ button {
   letter-spacing: -0.02em;
 }
 
-.wordmark .rec-dot {
-  width: 7px;
-  height: 7px;
-  margin-top: 6px;
+.wordmark {
+  color: var(--brand-ink);
+}
+
+.wordmark .mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav {
@@ -286,8 +302,8 @@ button {
 }
 
 .nav-item[aria-current="page"] {
-  background: var(--stone);
-  color: var(--ink);
+  background: var(--brand-tint);
+  color: var(--brand-ink);
   font-weight: 600;
 }
 
@@ -588,6 +604,10 @@ button {
   min-width: 38px;
 }
 
+.rec-pill .waveform {
+  color: var(--brand);
+}
+
 .rec-pill[data-paused="true"] .rec-dot {
   background: var(--muted);
 }
@@ -645,8 +665,8 @@ button {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #262626;
-  color: #f2f1ee;
+  background: #2e332b;
+  color: #f4efe9;
   overflow: hidden;
 }
 
@@ -666,7 +686,7 @@ button {
   flex: 1;
   min-width: 0;
   font-size: 13px;
-  color: #a8a7a2;
+  color: #b8bdaf;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -675,17 +695,18 @@ button {
 .mini .icon-btn {
   width: 32px;
   height: 32px;
-  background: #333333;
-  color: #f2f1ee;
+  background: #3b4137;
+  color: #f4efe9;
 }
 
 .mini .icon-btn:hover {
-  background: #3d3d3d;
+  background: #454c40;
 }
 
 .mini .waveform {
   height: 34px;
   gap: 3px;
+  color: #a9b39e;
 }
 
 .mini .waveform span {
@@ -701,7 +722,7 @@ button {
   height: 42px;
   padding: 0 6px 0 12px;
   border-radius: 12px;
-  background: #333333;
+  background: #3b4137;
 }
 
 .mini-input input {
@@ -709,12 +730,12 @@ button {
   border: 0;
   outline: none;
   background: transparent;
-  color: #f2f1ee;
+  color: #f4efe9;
   user-select: text;
 }
 
 .mini-input input::placeholder {
-  color: #a8a7a2;
+  color: #b8bdaf;
 }
 
 .mini-actions {
@@ -729,17 +750,21 @@ button {
 }
 
 .mini .btn-dark {
-  background: #333333;
-  color: #f2f1ee;
+  background: #3b4137;
+  color: #f4efe9;
 }
 
 .mini .btn-dark:hover:not(:disabled) {
-  background: #3d3d3d;
+  background: #454c40;
 }
 
 .mini .btn-light {
-  background: #f2f1ee;
-  color: #111111;
+  background: #f4efe9;
+  color: #2a2d27;
+}
+
+.mini-pill .waveform {
+  color: #a9b39e;
 }
 
 .mini-pill {
@@ -751,8 +776,8 @@ button {
   padding: 0 8px 0 16px;
   border: 0;
   border-radius: 999px;
-  background: #262626;
-  color: #f2f1ee;
+  background: #2e332b;
+  color: #f4efe9;
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -764,12 +789,12 @@ button {
   flex-direction: column;
   justify-content: center;
   gap: 12px;
-  color: #a8a7a2;
+  color: #b8bdaf;
   font-size: 13px;
 }
 
 .mini-idle strong {
-  color: #f2f1ee;
+  color: #f4efe9;
   font-size: 16px;
 }
 
@@ -866,8 +891,16 @@ button {
   color: var(--ink);
 }
 
+.writeup li.yours::marker {
+  color: var(--brand);
+}
+
 .writeup li.added {
   color: var(--muted);
+}
+
+.writeup li.added::marker {
+  color: color-mix(in srgb, var(--brand) 45%, var(--bg));
 }
 
 .writeup .actions {
@@ -892,7 +925,7 @@ button {
   margin-top: 3px;
   flex-shrink: 0;
   border-radius: 5px;
-  border: 1.5px solid var(--muted);
+  border: 1.5px solid var(--brand);
 }
 
 .writeup .actions .task {
@@ -926,7 +959,7 @@ button {
 }
 
 .writeup .legend .swatch.yours {
-  background: var(--ink);
+  background: var(--brand);
 }
 
 .hint.writing {
@@ -1023,4 +1056,13 @@ button {
 
 .writeup .actions .speaker {
   flex-shrink: 0;
+}
+
+/* The app mark follows the theme: light ink on sage by day, dark at night. */
+.wordmark .mark svg {
+  stroke: var(--btn-ink);
+}
+
+.wordmark .mark circle {
+  fill: var(--btn-ink);
 }
