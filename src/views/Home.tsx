@@ -1,4 +1,4 @@
-import { useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { SearchIcon } from "../components/Icons";
 import { dayLabel, greeting, length } from "../lib/format";
@@ -27,6 +27,25 @@ export function Home({ notes, recording, onStart, onOpen, onMenu }: Props) {
   }, [notes, query]);
 
   const busy = recording.noteId !== null;
+  const search = useRef<HTMLInputElement>(null);
+
+  // ⌘K jumps to search, ⌘N starts a note.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!event.metaKey || event.altKey || event.ctrlKey) return;
+      const key = event.key.toLowerCase();
+      if (key === "k") {
+        event.preventDefault();
+        search.current?.focus();
+        search.current?.select();
+      } else if (key === "n" && !busy) {
+        event.preventDefault();
+        onStart();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onStart]);
 
   return (
     <div className="main">
@@ -35,11 +54,15 @@ export function Home({ notes, recording, onStart, onOpen, onMenu }: Props) {
           <SearchIcon />
           <span className="visually-hidden">Search notes</span>
           <input
+            ref={search}
             type="search"
             placeholder="Search every meeting"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
+          <kbd className="kbd" aria-hidden>
+            ⌘K
+          </kbd>
         </label>
         <div className="topbar-actions">
           {busy ? (
@@ -69,19 +92,19 @@ export function Home({ notes, recording, onStart, onOpen, onMenu }: Props) {
             <section className="start-card" aria-label="Start a note">
               <div style={{ flex: 1 }}>
                 <h2>Ready when your meeting is</h2>
-                <p>
-                  Start a note, type what matters to you, and Captain keeps time. Or use the Captain icon in the
-                  menu bar.
-                </p>
+                <p>Start a note and type what matters. Captain keeps time and listens to both sides.</p>
               </div>
-              <button type="button" className="btn btn-primary" onClick={onStart}>
+              <button type="button" className="btn btn-secondary btn-outline" onClick={onStart}>
                 Start
+                <kbd className="kbd" aria-hidden>
+                  ⌘N
+                </kbd>
               </button>
             </section>
           )}
 
           <section aria-labelledby="recent">
-            <h2 id="recent" className="label" style={{ margin: "0 0 10px" }}>
+            <h2 id="recent" className="section-title">
               {query ? `Matching “${query}”` : "Recent notes"}
             </h2>
             {shown.length === 0 ? (
@@ -98,7 +121,7 @@ export function Home({ notes, recording, onStart, onOpen, onMenu }: Props) {
                     onClick={() => onOpen(note.id)}
                     onContextMenu={onMenu(note.id)}
                   >
-                    <span className="when">{dayLabel(note.createdAtMs, now).toUpperCase()}</span>
+                    <span className="when">{dayLabel(note.createdAtMs, now)}</span>
                     <span className="body">
                       <span className="title">{note.title}</span>
                       <span className="snippet">{note.snippet || "No notes yet"}</span>
