@@ -17,7 +17,7 @@ tauri-build = { version = "2", features = [] }
 memo-core = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 
 [features]
 # Turned on by `tauri build`. Serves the bundled frontend instead of devUrl.
