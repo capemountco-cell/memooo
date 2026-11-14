@@ -358,9 +358,10 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
             "quit" => app.exit(0),
             _ => {}
         });
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
-    }
+    // A one-colour "C" from the Captain signature. As a template image macOS
+    // tints it to match a light or dark menu bar, like the system's own icons.
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
+    builder = builder.icon(icon).icon_as_template(true);
     builder.build(app)?;
     Ok(())
 }
