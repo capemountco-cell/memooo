@@ -1,6 +1,6 @@
 /**
  * The Captain signature wordmark. It takes the surrounding text colour, so
- * the same mark works in ink on linen and in light type on the overlay glass.
+ * the same mark works in ink on the stone page and in light type on the overlay glass.
  * Height sets the size; the width follows the signature's 3.5:1 shape.
  */
 export function CaptainWordmark({ height = 24, title = "Captain" }: { height?: number; title?: string }) {

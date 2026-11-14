@@ -1,5 +1,5 @@
 /*
- * Memo's look: linen paper, sage green, olive charcoal at night. Sora type,
+ * Captain's look: pale stone, sage green, olive charcoal at night. Sora type,
  * soft corners. Sage is the app's voice (marks, active states, the
  * waveform); a deeper sage carries button text. Ember appears only while
  * recording.
@@ -12,25 +12,26 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 
-  --bg: #f4efe9;
-  --side: #ece6dd;
-  --card: #fbf9f6;
-  --stone: #e7e1d8;
-  --stone-hover: #ddd6cb;
-  --line: #e2dbd0;
-  --ink: #2a2d27;
-  --soft: #474a42;
-  --muted: #62635a;
+  /* Stone neutrals: a pale, cool warm-grey page, near-black type. */
+  --bg: #f5f3f1;
+  --side: #eeebe7;
+  --card: #fbfaf8;
+  --stone: #ebe8e4;
+  --stone-hover: #e4e0db;
+  --line: #dedbd8;
+  --ink: #121211;
+  --soft: #3f3c38;
+  --muted: #6e6861; /* 4.5:1 or better on page, sidebar, card and stone */
   --brand: #798470;
   --brand-tint: #e3e7dc;
   --brand-ink: #3d4636;
   --btn: #5b6652;
-  --btn-ink: #fbf9f6;
+  --btn-ink: #fbfaf8;
   --rec: #b5533c;
   --rec-dot: #e08a72;
   --rec-tint: #f3e2db;
   --rec-ink: #8a3a26;
-  --shadow: 0 12px 32px rgba(42, 45, 39, 0.08);
+  --shadow: 0 12px 32px rgba(18, 18, 17, 0.07);
 
   /* Speaker tones: a soft tint with a darker ink of the same hue (4.5:1+). */
   --sp0-bg: #e3e7dc;
@@ -267,7 +268,7 @@ button {
 }
 
 .wordmark {
-  color: var(--brand-ink);
+  color: var(--ink);
 }
 
 .nav {
@@ -660,7 +661,7 @@ button {
   flex-direction: column;
   gap: 12px;
   background: #2e332b;
-  color: #f4efe9;
+  color: #f5f3f1;
   overflow: hidden;
 }
 
@@ -690,7 +691,7 @@ button {
   width: 32px;
   height: 32px;
   background: #3b4137;
-  color: #f4efe9;
+  color: #f5f3f1;
 }
 
 .mini .icon-btn:hover {
@@ -724,7 +725,7 @@ button {
   border: 0;
   outline: none;
   background: transparent;
-  color: #f4efe9;
+  color: #f5f3f1;
   user-select: text;
 }
 
@@ -745,7 +746,7 @@ button {
 
 .mini .btn-dark {
   background: #3b4137;
-  color: #f4efe9;
+  color: #f5f3f1;
 }
 
 .mini .btn-dark:hover:not(:disabled) {
@@ -753,8 +754,8 @@ button {
 }
 
 .mini .btn-light {
-  background: #f4efe9;
-  color: #2a2d27;
+  background: #f5f3f1;
+  color: #121211;
 }
 
 .mini-pill .waveform {
@@ -771,7 +772,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: #2e332b;
-  color: #f4efe9;
+  color: #f5f3f1;
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -788,7 +789,7 @@ button {
 }
 
 .mini-idle strong {
-  color: #f4efe9;
+  color: #f5f3f1;
   font-size: 16px;
 }
 
@@ -1072,7 +1073,7 @@ button {
   border-radius: 20px;
   background: rgba(34, 38, 31, 0.58);
   border: 1px solid rgba(244, 239, 233, 0.12);
-  color: #f4efe9;
+  color: #f5f3f1;
   overflow: hidden;
   -webkit-backdrop-filter: blur(24px) saturate(140%);
   backdrop-filter: blur(24px) saturate(140%);
@@ -1109,7 +1110,7 @@ button {
   border: 0;
   border-radius: 10px;
   background: rgba(244, 239, 233, 0.1);
-  color: #f4efe9;
+  color: #f5f3f1;
   font-size: 12px;
 }
 
@@ -1125,8 +1126,8 @@ button {
   padding: 0 12px;
   border: 0;
   border-radius: 10px;
-  background: #f4efe9;
-  color: #2a2d27;
+  background: #f5f3f1;
+  color: #121211;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -1240,7 +1241,7 @@ button {
   border-radius: 6px;
   border: 1px solid rgba(244, 239, 233, 0.25);
   font: 600 11px inherit;
-  color: #f4efe9;
+  color: #f5f3f1;
 }
 
 .ov-actions {
@@ -1255,7 +1256,7 @@ button {
   border: 1px solid rgba(244, 239, 233, 0.16);
   border-radius: 999px;
   background: rgba(244, 239, 233, 0.06);
-  color: #f4efe9;
+  color: #f5f3f1;
   font-size: 12px;
   font-weight: 600;
 }
@@ -1279,7 +1280,7 @@ button {
   border: 0;
   outline: none;
   background: transparent;
-  color: #f4efe9;
+  color: #f5f3f1;
   font-size: 14px;
   user-select: text;
 }
@@ -1317,8 +1318,8 @@ button {
   padding: 0 18px;
   border: 0;
   border-radius: 12px;
-  background: #f4efe9;
-  color: #2a2d27;
+  background: #f5f3f1;
+  color: #121211;
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1355,7 +1356,7 @@ button {
 
 .ov-empty strong {
   font-size: 17px;
-  color: #f4efe9;
+  color: #f5f3f1;
 }
 
 .ov-pill {
@@ -1368,7 +1369,7 @@ button {
   border: 1px solid rgba(244, 239, 233, 0.14);
   border-radius: 999px;
   background: rgba(34, 38, 31, 0.62);
-  color: #f4efe9;
+  color: #f5f3f1;
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
