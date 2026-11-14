@@ -5,7 +5,7 @@
 //! as mono 32-bit floats at `memo_core::audio::SAMPLE_RATE`, where they are
 //! paired with the microphone and streamed to transcription.
 //!
-//! macOS asks the user once for "Screen & System Audio Recording". Memo asks
+//! macOS asks the user once for "Screen & System Audio Recording". Captain asks
 //! for audio only; the video stream ScreenCaptureKit insists on is a few
 //! pixels, sent nowhere.
 
@@ -48,7 +48,7 @@ mod imp {
                 .with_width(2)
                 .with_height(2)
                 .with_captures_audio(true)
-                // Memo's own sounds are not part of the meeting.
+                // Captain's own sounds are not part of the meeting.
                 .with_excludes_current_process_audio(true)
                 .with_sample_rate(SAMPLE_RATE as i32)
                 .with_channel_count(1);
@@ -91,7 +91,7 @@ mod imp {
     }
 
     fn permission_message() -> String {
-        "Memo can't hear the call yet. Allow it in System Settings › Privacy & Security › \
+        "Captain can't hear the call yet. Allow it in System Settings › Privacy & Security › \
          Screen & System Audio Recording, then start a new note."
             .to_string()
     }

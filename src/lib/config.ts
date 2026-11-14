@@ -1,5 +1,5 @@
 /**
- * Where Memo's backend lives. Both values are public by design: the
+ * Where Captain's backend lives. Both values are public by design: the
  * publishable key only identifies the project, and everything sensitive
  * (the Deepgram key) stays inside the Supabase function.
  */

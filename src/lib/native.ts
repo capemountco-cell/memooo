@@ -21,7 +21,7 @@ export interface Segment {
 
 export interface WriteupPoint {
   text: string;
-  /** The user's own note, as opposed to something Memo added. */
+  /** The user's own note, as opposed to something Captain added. */
   fromYou: boolean;
 }
 
@@ -111,7 +111,7 @@ export async function startSystemAudio(onSamples: (samples: Float32Array) => voi
 
 export const stopSystemAudio = () => (nativeAvailable() ? invoke<void>("stop_system_audio") : Promise.resolve());
 
-/** A snapshot of the screen (Memo's own windows left out) as Base64 PNG. */
+/** A snapshot of the screen (Captain's own windows left out) as Base64 PNG. */
 export const captureScreen = () => call<string>("capture_screen");
 
 /** ⌘↵ was pressed during a call. */

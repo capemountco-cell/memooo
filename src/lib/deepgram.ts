@@ -1,6 +1,6 @@
 /**
  * Talking to Deepgram's live transcription: the stream URL, a short-lived
- * token from Memo's backend, and turning Deepgram's messages into lines.
+ * token from Captain's backend, and turning Deepgram's messages into lines.
  */
 
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
@@ -28,7 +28,7 @@ export function listenUrl(sampleRate: number, channels: 1 | 2 = 1): string {
   return `wss://api.deepgram.com/v1/listen?${params}`;
 }
 
-/** Ask Memo's backend for a token that can open one stream. */
+/** Ask Captain's backend for a token that can open one stream. */
 export async function fetchToken(): Promise<string> {
   let response: Response;
   try {
@@ -38,7 +38,7 @@ export async function fetchToken(): Promise<string> {
       body: "{}",
     });
   } catch {
-    throw new Error("Can't reach Memo's server. Check your internet connection.");
+    throw new Error("Can't reach Captain's server. Check your internet connection.");
   }
   const body = (await response.json().catch(() => ({}))) as { accessToken?: string; error?: string };
   if (!response.ok || !body.accessToken) {

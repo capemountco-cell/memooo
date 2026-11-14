@@ -3,7 +3,7 @@
 //
 // Claude reads the recent transcript (and the user's notes, and a screenshot
 // when given) and the answer streams back as plain text, so it starts
-// appearing in Memo's overlay within a second or two.
+// appearing in Captain's overlay within a second or two.
 
 import Anthropic from "npm:@anthropic-ai/sdk@1.8.0";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -35,7 +35,7 @@ interface Segment {
 
 type Mode = "assist" | "say" | "ask" | "screen";
 
-const SYSTEM = `You are Memo, an assistant the user sees privately in a small overlay during a live meeting. Nobody else in the meeting sees you.
+const SYSTEM = `You are Captain, an assistant the user sees privately in a small overlay during a live meeting. Nobody else in the meeting sees you.
 
 You get the most recent part of the transcript ("You" is the user; "Speaker 2", "Speaker 3" and so on are others), the notes the user has typed, and sometimes a screenshot of the user's screen.
 
@@ -140,12 +140,12 @@ Deno.serve(async (req) => {
         }
         const message = await stream.finalMessage();
         if (message.stop_reason === "refusal") {
-          controller.enqueue(encoder.encode("\n\n(Memo can't help with that one.)"));
+          controller.enqueue(encoder.encode("\n\n(Captain can't help with that one.)"));
         }
       } catch (error) {
         const reason =
           error instanceof Anthropic.RateLimitError
-            ? "Memo is busy right now. Try again in a moment."
+            ? "Captain is busy right now. Try again in a moment."
             : error instanceof Anthropic.APIError
               ? `Live help failed (${error.status}). Try again.`
               : "Live help failed. Try again.";

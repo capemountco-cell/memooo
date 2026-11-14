@@ -257,23 +257,17 @@ button {
   align-items: center;
   gap: 7px;
   padding: 0 10px;
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  /* The signature's descender sits low; lift it to line up with the nav. */
+  margin-top: -4px;
+}
+
+.captain-wordmark {
+  display: block;
+  flex: none;
 }
 
 .wordmark {
   color: var(--brand-ink);
-}
-
-.wordmark .mark {
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  background: var(--brand);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .nav {
@@ -1059,13 +1053,6 @@ button {
 }
 
 /* The app mark follows the theme: light ink on sage by day, dark at night. */
-.wordmark .mark svg {
-  stroke: var(--btn-ink);
-}
-
-.wordmark .mark circle {
-  fill: var(--btn-ink);
-}
 
 /* ---- In-call overlay -------------------------------------------------- */
 /*

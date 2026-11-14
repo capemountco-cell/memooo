@@ -6,7 +6,7 @@ export type MicState = "off" | "asking" | "live" | "denied" | "unavailable";
  * Microphone loudness as `bars` values between 0 and 1, newest last, while
  * `active` is true. The stream is released as soon as `active` turns false.
  *
- * This is the first step of capture: it proves Memo can hear the room and
+ * This is the first step of capture: it proves Captain can hear the room and
  * gives the waveform something real to draw.
  */
 export function useMicLevels(active: boolean, bars: number): { levels: number[]; state: MicState } {

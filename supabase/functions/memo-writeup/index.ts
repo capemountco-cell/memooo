@@ -1,7 +1,7 @@
-// Turns a meeting's rough notes and transcript into Memo's write-up.
+// Turns a meeting's rough notes and transcript into Captain's write-up.
 //
 // Claude merges what the user typed with what was said: the user's own points
-// are kept (lightly tidied) and flagged, Memo adds what they missed, and
+// are kept (lightly tidied) and flagged, Captain adds what they missed, and
 // action items come out with owners and dates. The Anthropic API key stays
 // in this function's secrets as ANTHROPIC_API_KEY.
 
@@ -69,7 +69,7 @@ const SCHEMA = {
   },
 };
 
-const SYSTEM = `You write meeting notes for Memo, a note-taking app. You get the notes the user typed during a meeting and the transcript, and you return the meeting's write-up.
+const SYSTEM = `You write meeting notes for Captain, a note-taking app. You get the notes the user typed during a meeting and the transcript, and you return the meeting's write-up.
 
 The user's own notes are the backbone: they show what the user cared about. Keep every point they wrote, tidied into a clear sentence but with their meaning unchanged, and mark it fromYou: true. Then add what the transcript shows they would want and did not write down (decisions, numbers, reasons, open questions, who said what when it matters) as points marked fromYou: false. Put each added point in the section it belongs to, after the user's points on that topic.
 
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     return reply(200, { writeup });
   } catch (error) {
     if (error instanceof Anthropic.RateLimitError) {
-      return reply(429, { error: "Memo is busy right now. Try again in a minute." });
+      return reply(429, { error: "Captain is busy right now. Try again in a minute." });
     }
     if (error instanceof Anthropic.AuthenticationError) {
       console.error("Anthropic rejected the API key");

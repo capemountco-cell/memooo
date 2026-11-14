@@ -317,7 +317,7 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
           ))}
           {liveLines.length === 0 && (
             <p className="hint" style={{ margin: 0 }}>
-              Words appear here as people speak. Ask Memo for help from the overlay or with ⌘↵.
+              Words appear here as people speak. Ask Captain for help from the overlay or with ⌘↵.
             </p>
           )}
         </section>
@@ -326,7 +326,7 @@ export function NoteView({ id, recording, onBack, onChanged, onDeleted }: Props)
   );
 }
 
-/** The write-up: the user's points in ink, Memo's additions in grey. */
+/** The write-up: the user's points in ink, Captain's additions in grey. */
 function WriteupView({ writeup }: { writeup: Writeup }) {
   const items = writeup.actionItems.filter((item) => item.task.trim());
   return (
@@ -364,7 +364,7 @@ function WriteupView({ writeup }: { writeup: Writeup }) {
       )}
       <p className="legend">
         <span className="swatch yours" aria-hidden /> Your notes
-        <span className="swatch added" aria-hidden /> Added by Memo from the transcript
+        <span className="swatch added" aria-hidden /> Added by Captain from the transcript
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
 /**
- * A muted colour per speaker, from the same family as Memo's off-white
+ * A muted colour per speaker, from the same family as Captain's off-white
  * palette: clay, sage, slate, plum, ochre, with "You" in neutral stone.
  * Colour never stands alone: the name is always written in the chip.
  */
