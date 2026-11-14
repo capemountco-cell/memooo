@@ -8,7 +8,7 @@
  * implementation: the rules live in the core crate.
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import { browserBackend } from "./browserBackend";
@@ -82,6 +82,20 @@ export const showMini = () => call<void>("show_mini");
 export const hideMini = () => call<void>("hide_mini");
 export const setMiniCollapsed = (collapsed: boolean) =>
   call<void>("set_mini_collapsed", { collapsed });
+
+/**
+ * Start hearing the Mac's own audio output (the other side of a call).
+ * `onSamples` gets mono 32-bit float chunks at the returned sample rate.
+ * Rejects with a readable reason when macOS has not allowed it yet.
+ */
+export async function startSystemAudio(onSamples: (samples: Float32Array) => void): Promise<number> {
+  if (!nativeAvailable()) throw new Error("Call audio is captured by the Mac app only.");
+  const channel = new Channel<ArrayBuffer>();
+  channel.onmessage = (buffer) => onSamples(new Float32Array(buffer));
+  return invoke<number>("start_system_audio", { onAudio: channel });
+}
+
+export const stopSystemAudio = () => (nativeAvailable() ? invoke<void>("stop_system_audio") : Promise.resolve());
 
 /** Recording started, paused or stopped, in any window or the menu bar. */
 export function onRecordingChanged(handler: (status: RecordingStatus) => void): Promise<UnlistenFn> {

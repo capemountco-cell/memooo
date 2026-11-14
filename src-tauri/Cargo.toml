@@ -19,6 +19,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tauri = { version = "2", features = ["tray-icon"] }
 
+# Captures system audio (the other side of a call). macOS only.
+[target.'cfg(target_os = "macos")'.dependencies]
+screencapturekit = "11.1.2"
+
 [features]
 # Turned on by `tauri build`. Serves the bundled frontend instead of devUrl.
 custom-protocol = ["tauri/custom-protocol"]
